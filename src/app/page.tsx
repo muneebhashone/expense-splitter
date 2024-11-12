@@ -1,101 +1,511 @@
-import Image from "next/image";
+"use client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useStateLocalStorage } from '@/hooks/useStateWithLocalStorage';
+import {
+  ArrowRight,
+  CheckCircle,
+  DollarSign,
+  HandCoins,
+  Plus,
+  Receipt,
+  Trash2,
+  UserPlus,
+  Users,
+  XCircle
+} from 'lucide-react';
+import { useState } from 'react';
 
-export default function Home() {
+interface Payers {
+  [key: string]: number;
+}
+
+interface Expense {
+  payers: Payers;
+  amount: number;
+  description: string;
+  participants: string[];
+  splitAmount: number;
+  date: string;
+}
+
+interface Settlement {
+  from: string;
+  to: string;
+  amount: number;
+  paid: boolean;
+  date: string | null;
+}
+
+
+const ExpenseSplitter = () => {
+  const [friends, setFriends] = useStateLocalStorage<string[]>("friends", []);
+  const [expenses, setExpenses] = useStateLocalStorage<Expense[]>("expenses", []);
+  const [settlements, setSettlements] = useStateLocalStorage<Settlement[]>("settlements", []);
+  const [newFriend, setNewFriend] = useStateLocalStorage<string>("newFriend", '');
+  const [description, setDescription] = useStateLocalStorage<string>("description", '');
+  const [totalAmount, setTotalAmount] = useStateLocalStorage<string>("totalAmount", '');
+  
+  
+  // State for multiple payers
+  const [payers, setPayers] = useState<Payers>({});
+  const [participants, setParticipants] = useState<Set<string>>(new Set());
+
+  // Add new friend
+  const handleAddFriend = () => {
+    if (newFriend.trim() && !friends.includes(newFriend.trim())) {
+      setFriends([...friends, newFriend.trim()]);
+      setNewFriend('');
+    }
+  };
+
+  // Delete friend
+  const handleDeleteFriend = (friendToDelete: string) => {
+    if (window.confirm(`Are you sure you want to delete ${friendToDelete}? This will affect all related expenses and settlements.`)) {
+      // Remove friend from friends list
+      setFriends(friends.filter(friend => friend !== friendToDelete));
+      
+      // Remove expenses where this friend is the only payer or participant
+      setExpenses(expenses.filter(expense => {
+        const payerExists = Object.keys(expense.payers).some(payer => payer !== friendToDelete);
+        const participantExists = expense.participants.some(p => p !== friendToDelete);
+        return payerExists && participantExists;
+      }));
+      
+      // Remove settlements involving this friend
+      setSettlements(settlements.filter(
+        settlement => settlement.from !== friendToDelete && settlement.to !== friendToDelete
+      ));
+    }
+  };
+
+  // Delete expense
+  const handleDeleteExpense = (expenseIndex: number) => {
+    if (window.confirm('Are you sure you want to delete this expense?')) {
+      setExpenses(expenses.filter((_, index) => index !== expenseIndex));
+    }
+  };
+
+  // Handle payer amount change
+  const handlePayerAmountChange = (friend: string, amount: string) => {
+    setPayers(currentPayers => {
+      const newPayers = { ...currentPayers };
+      if (amount) {
+        newPayers[friend] = parseFloat(amount);
+      } else {
+        delete newPayers[friend];
+      }
+      return newPayers;
+    });
+  };
+
+  // Add new expense
+  const handleAddExpense = () => {
+    if (Object.keys(payers).length > 0 && totalAmount && participants.size > 0) {
+      const payersTotal = Object.values(payers).reduce((sum, amount) => sum + amount, 0);
+      if (Math.abs(payersTotal - parseFloat(totalAmount)) > 0.01) {
+        alert('The sum of payer amounts must equal the total expense amount!');
+        return;
+      }
+
+      const splitAmount = parseFloat(totalAmount) / participants.size;
+      const newExpense = {
+        payers: { ...payers },
+        amount: parseFloat(totalAmount),
+        description: description || 'Unlisted expense',
+        participants: Array.from(participants),
+        splitAmount: splitAmount,
+        date: new Date().toLocaleDateString()
+      };
+      setExpenses([...expenses, newExpense]);
+      
+      // Reset form
+      setPayers({});
+      setTotalAmount('');
+      setDescription('');
+      setParticipants(new Set());
+    }
+  };
+
+  // Calculate balances
+  const calculateBalances = (): { [key: string]: number } => {
+    const balances: { [key: string]: number } = {};
+    friends.forEach(friend => {
+      balances[friend] = 0;
+    });
+
+    // Process expenses
+    expenses.forEach(expense => {
+      // Add paid amounts to payers' balances
+      Object.entries(expense.payers).forEach(([payer, amount]) => {
+        balances[payer] += amount;
+      });
+      
+      // Subtract split amount from each participant's balance
+      expense.participants.forEach(participant => {
+        balances[participant] -= expense.splitAmount;
+      });
+    });
+
+    // Process completed settlements
+    settlements.forEach(settlement => {
+      if (settlement.paid) {
+        balances[settlement.from] += settlement.amount;
+        balances[settlement.to] -= settlement.amount;
+      }
+    });
+
+    return balances;
+  };
+
+  // Calculate optimal settlements
+  const calculateSettlements = (): Settlement[] => {
+    const balances = calculateBalances();
+    const newSettlements: Settlement[] = [];
+    
+    const debtors = friends.filter(f => balances[f] < -0.01)
+      .sort((a, b) => balances[a] - balances[b]);
+    const creditors = friends.filter(f => balances[f] > 0.01)
+      .sort((a, b) => balances[b] - balances[a]);
+    
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+      const debtor = debtors[i];
+      const creditor = creditors[j];
+      
+      const debtAmount = -balances[debtor];
+      const creditAmount = balances[creditor];
+      const settleAmount = Math.min(debtAmount, creditAmount);
+      
+      if (settleAmount > 0.01) {
+        newSettlements.push({
+          from: debtor,
+          to: creditor,
+          amount: Math.round(settleAmount * 100) / 100,
+          paid: false,
+          date: null
+        });
+      }
+      
+      balances[debtor] += settleAmount;
+      balances[creditor] -= settleAmount;
+      
+      if (Math.abs(balances[debtor]) < 0.01) i++;
+      if (Math.abs(balances[creditor]) < 0.01) j++;
+    }
+    
+    return newSettlements;
+  };
+
+  // Mark settlement as paid
+  const handleSettlementPaid = (settlement: Settlement) => {
+    const newSettlement = {
+      ...settlement,
+      paid: true,
+      date: new Date().toLocaleDateString()
+    };
+    setSettlements([...settlements, newSettlement]);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="max-w-7xl mx-auto p-4 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="text-center py-6">
+        <h1 className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-3">
+          <HandCoins className="h-8 w-8 text-blue-500" />
+          Expense Splitter
+        </h1>
+        <p className="text-gray-600 mt-2">Split expenses easily with friends</p>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <div className="grid grid-cols-1 lg:grid-cols-2  gap-6">
+        {/* Friend Management Section */}
+        <Card className="border-t-4 border-t-blue-500">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-500" />
+                  Friends
+                </CardTitle>
+                <CardDescription>Manage your group of friends</CardDescription>
+              </div>
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                {friends.length} friends
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={newFriend}
+                    onChange={(e) => setNewFriend(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newFriend.trim()) {
+                        handleAddFriend();
+                      }
+                    }}
+                    placeholder="Enter friend's name"
+                    className="w-full p-3 border rounded-lg pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <UserPlus className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                </div>
+                <button
+                  onClick={handleAddFriend}
+                  disabled={!newFriend.trim()}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add
+                </button>
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                {friends.map((friend) => (
+                  <span 
+                    key={friend} 
+                    className="bg-white shadow-sm px-4 py-2 rounded-lg flex items-center gap-2 border border-gray-200 hover:border-gray-300 transition-colors"
+                  >
+                    <Users className="h-4 w-4 text-gray-500" />
+                    {friend}
+                    <button
+                      onClick={() => handleDeleteFriend(friend)}
+                      disabled={true}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Expense Section */}
+        {friends.length > 0 && (
+          <Card className="border-t-4 border-t-green-500">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-green-500" />
+                    New Expense
+                  </CardTitle>
+                  <CardDescription>Add a new shared expense</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Basic Expense Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Total Amount</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <input
+                        type="number"
+                        value={totalAmount}
+                        onChange={(e) => setTotalAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full p-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <input
+                      type="text"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="What was this expense for?"
+                      className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Payers Section */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">Who Paid?</label>
+                  <div className="grid gap-3">
+                    {friends.map((friend) => (
+                      <div key={friend} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          value={payers[friend] || ''}
+                          onChange={(e) => handlePayerAmountChange(friend, e.target.value)}
+                          className="w-32 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                        <span className="text-gray-700">{friend}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Participants Section */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">Split Between</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {friends.map((friend) => (
+                      <label key={friend} className="flex items-center gap-2 bg-white p-3 rounded-lg border hover:border-green-500 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={participants.has(friend)}
+                          onChange={(e) => {
+                            const newParticipants = new Set(participants);
+                            if (e.target.checked) {
+                              newParticipants.add(friend);
+                            } else {
+                              newParticipants.delete(friend);
+                            }
+                            setParticipants(newParticipants);
+                          }}
+                          className="rounded text-green-500 focus:ring-green-500"
+                        />
+                        <span className="text-gray-700">{friend}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleAddExpense}
+                  disabled={!Object.keys(payers).length || !totalAmount || participants.size === 0}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add Expense
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Expenses List */}
+        {expenses.length > 0 && (
+          <Card className="border-t-4 border-t-purple-500">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-purple-500" />
+                    Expenses
+                  </CardTitle>
+                  <CardDescription>Review all shared expenses</CardDescription>
+                </div>
+                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                  {expenses.length} expenses
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {expenses.map((expense, index) => (
+                  <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-purple-200 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">{expense.description}</h3>
+                          <span className="text-gray-500 text-sm">({expense.date})</span>
+                        </div>
+                        
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <p className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4" />
+                            Total: ${expense.amount}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Paid by: {Object.entries(expense.payers).map(([name, amount]) => 
+                              `${name} ($${amount})`).join(', ')}
+                          </p>
+                          <p>Split between: {expense.participants.join(', ')}</p>
+                          <p className="font-medium text-purple-600">${expense.splitAmount.toFixed(2)} each</p>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleDeleteExpense(index)}
+                        className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Settlements */}
+        {expenses.length > 0 && (
+          <Card className="border-t-4 border-t-orange-500">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <HandCoins className="h-5 w-5 text-orange-500" />
+                    Settlements
+                  </CardTitle>
+                  <CardDescription>Track payments and settlements</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Pending Settlements */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-700">Pending Settlements</h3>
+                  {calculateSettlements().map((settlement, index) => (
+                    <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <span>{settlement.from}</span>
+                          <ArrowRight className="h-4 w-4 text-orange-500" />
+                          <span>{settlement.to}</span>
+                        </div>
+                        <span className="font-medium text-orange-600">${settlement.amount.toFixed(2)}</span>
+                      </div>
+                      <button
+                        onClick={() => handleSettlementPaid(settlement)}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Mark as Paid
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Completed Settlements */}
+                {settlements.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-medium text-gray-700">Completed Settlements</h3>
+                    {settlements.map((settlement, index) => (
+                      <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span className="text-gray-600">
+                            {settlement.from} paid ${settlement.amount.toFixed(2)} to {settlement.to}
+                          </span>
+                          <span className="text-sm text-gray-500">({settlement.date})</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
-}
+};
+
+export default ExpenseSplitter;
