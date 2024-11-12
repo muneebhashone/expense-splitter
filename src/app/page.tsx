@@ -348,7 +348,24 @@ const ExpenseSplitter = () => {
 
                 {/* Participants Section */}
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">Split Between</label>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-gray-700">Split Between</label>
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        onChange={(e) => {
+                          const newParticipants = new Set(friends);
+                          if (!e.target.checked) {
+                            newParticipants.clear();
+                          }
+                          setParticipants(newParticipants);
+                        }}
+                        checked={participants.size === friends.length}
+                        className="rounded text-green-500 focus:ring-green-500"
+                      />
+                      Split equally
+                    </label>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {friends.map((friend) => (
                       <label key={friend} className="flex items-center gap-2 bg-white p-3 rounded-lg border hover:border-green-500 cursor-pointer transition-colors">
@@ -462,7 +479,7 @@ const ExpenseSplitter = () => {
                 <div className="space-y-3">
                   <h3 className="font-medium text-gray-700">Pending Settlements</h3>
                   {calculateSettlements().map((settlement, index) => (
-                    <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
+                    <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2 text-gray-700">
                           <span>{settlement.from}</span>
@@ -473,7 +490,7 @@ const ExpenseSplitter = () => {
                       </div>
                       <button
                         onClick={() => handleSettlementPaid(settlement)}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"
                       >
                         <CheckCircle className="h-4 w-4" />
                         Mark as Paid
