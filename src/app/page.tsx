@@ -11,7 +11,9 @@ import {
   Trash2,
   UserPlus,
   Users,
-  XCircle
+  XCircle,
+  Save,
+  Upload
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -206,6 +208,56 @@ const ExpenseSplitter = () => {
     setSettlements([...settlements, newSettlement]);
   };
 
+  const handleExportData = () => {
+    const data = {
+      friends,
+      expenses,
+      settlements,
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `expense-splitter-export-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        
+        // Validate the imported data structure
+        if (!Array.isArray(data.friends) || !Array.isArray(data.expenses) || !Array.isArray(data.settlements)) {
+          throw new Error('Invalid file format');
+        }
+
+        // Update all states
+        setFriends(data.friends);
+        setExpenses(data.expenses);
+        setSettlements(data.settlements);
+
+        // Reset the file input
+        event.target.value = '';
+        
+        alert('Data imported successfully!');
+      } catch (error) {
+        alert('Error importing data. Please make sure the file is valid.');
+        console.error('Import error:', error);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-4 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -215,6 +267,27 @@ const ExpenseSplitter = () => {
           Expense Splitter
         </h1>
         <p className="text-gray-600 mt-2">Split expenses easily with friends</p>
+        
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={handleExportData}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <Save className="h-4 w-4" />
+            Export Data
+          </button>
+          
+          <label className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors cursor-pointer">
+            <Upload className="h-4 w-4" />
+            Import Data
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportData}
+              className="hidden"
+            />
+          </label>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2  gap-6">
