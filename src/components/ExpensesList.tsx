@@ -1,8 +1,8 @@
 import { Receipt, Trash2, Users, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingCard } from './ui/loading-card';
-import { Expense } from '@/types';
 import { format } from 'date-fns';
+import { Expense } from '@/hooks/useSupabaseData';
 
 interface ExpensesListProps {
   expenses: Expense[];
@@ -22,6 +22,7 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
       />
     );
   }
+
 
   return (
     <Card className="border-t-4 border-t-purple-500">
@@ -55,26 +56,26 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-medium text-gray-900">{expense.description}</h3>
                       <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
-                        {format(new Date(expense.date), 'MMM d, yyyy')}
+                        {format(new Date(expense?.date || ''), 'MMM d, yyyy')}
                       </span>
                     </div>
                     
                     <div className="mt-2 flex items-center gap-4">
                       <div className="flex items-center gap-1 text-sm text-gray-500">
                         <DollarSign className="h-4 w-4" />
-                        <span>Total: {expense.amount.toFixed(2)}</span>
+                        <span>Total: {expense.amount?.toFixed(2)}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-500">
                         <Users className="h-4 w-4" />
-                        <span>Split: {expense.splitAmount.toFixed(2)} each</span>
+                        <span>Split: {expense.split_amount?.toFixed(2)} each</span>
                       </div>
                     </div>
 
                     <div className="mt-2">
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(expense.payers).map(([payer, amount]) => (
-                          <span key={payer} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {payer}: ${amount.toFixed(2)}
+                        {expense?.expense_payers?.map((payer, index) => (
+                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {payer.payer}: ${JSON.stringify(payer.amount)}
                           </span>
                         ))}
                       </div>

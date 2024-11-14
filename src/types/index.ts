@@ -9,6 +9,9 @@ export interface Expense {
   participants: string[];
   splitAmount: number;
   date: string;
+
+  expense_payers?: Payers[];
+  expense_participants?: string[];
 }
 
 export interface Settlement {

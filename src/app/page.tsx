@@ -7,6 +7,8 @@ import { NewExpense } from '@/components/NewExpense';
 import { ExpensesList } from '@/components/ExpensesList';
 import { Settlements } from '@/components/Settlements';
 import { Header } from '@/components/Header';
+import { Expense as ExpenseType, Settlement as SettlementType } from '@/hooks/useSupabaseData';
+
 
 const ExpenseSplitter = () => {
   const {
@@ -53,7 +55,7 @@ const ExpenseSplitter = () => {
         splitAmount,
         date: new Date().toISOString()
       };
-      addExpense(newExpense);
+      addExpense(newExpense as Omit<Expense, 'expense_payers' | 'expense_participants'>);
       
       // Reset form
       setDescription('');
@@ -116,7 +118,7 @@ const ExpenseSplitter = () => {
             loading={loadingFriends}
           />
           <ExpensesList
-            expenses={expenses as Expense[]}
+            expenses={expenses as ExpenseType[]}
             onDeleteExpense={handleDeleteExpense}
             loading={loadingExpenses}
           />
@@ -146,7 +148,7 @@ const ExpenseSplitter = () => {
             disabled={loadingExpenses || loadingFriends}
           />
           <Settlements
-            settlements={settlements as Settlement[]}
+            settlements={settlements as SettlementType[]}
             onSettlementPaid={handleSettlementUpdate}
             loading={loadingSettlements}
           />

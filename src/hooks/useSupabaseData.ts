@@ -3,10 +3,10 @@ import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
 import { useUser } from '@supabase/auth-helpers-react';
 
-type Expense = Partial<Database['public']['Tables']['expenses']['Row']> & {expense_payers?: ExpensePayer[], expense_participants?: ExpenseParticipant[]}
-type Settlement = Partial<Database['public']['Tables']['settlements']['Row']>
-type ExpensePayer = Partial<Database['public']['Tables']['expense_payers']['Row']>
-type ExpenseParticipant = Partial<Database['public']['Tables']['expense_participants']['Row']>
+export type Expense = Partial<Database['public']['Tables']['expenses']['Row']> & {expense_payers?: ExpensePayer[], expense_participants?: ExpenseParticipant[]}
+export type Settlement = Partial<Database['public']['Tables']['settlements']['Row']>
+export type ExpensePayer = Partial<Database['public']['Tables']['expense_payers']['Row']>
+export type ExpenseParticipant = Partial<Database['public']['Tables']['expense_participants']['Row']>
 
 export const useSupabaseData = () => {
   const user = useUser();
