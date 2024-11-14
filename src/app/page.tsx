@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Expense, Payers, Settlement } from '@/types';
-import { calculateSettlements } from '@/utils/expense';
 import { FriendsList } from '@/components/FriendsList';
 import { NewExpense } from '@/components/NewExpense';
 import { ExpensesList } from '@/components/ExpensesList';
@@ -117,7 +116,7 @@ const ExpenseSplitter = () => {
             loading={loadingFriends}
           />
           <ExpensesList
-            expenses={expenses}
+            expenses={expenses as Expense[]}
             onDeleteExpense={handleDeleteExpense}
             loading={loadingExpenses}
           />
@@ -147,7 +146,7 @@ const ExpenseSplitter = () => {
             disabled={loadingExpenses || loadingFriends}
           />
           <Settlements
-            settlements={settlements}
+            settlements={settlements as Settlement[]}
             onSettlementPaid={handleSettlementUpdate}
             loading={loadingSettlements}
           />

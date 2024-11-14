@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Expense, Settlement } from '@/types';
+import { Database } from '@/types/supabase';
 import { useUser } from '@supabase/auth-helpers-react';
+
+type Expense = Partial<Database['public']['Tables']['expenses']['Row']> & {expense_payers?: ExpensePayer[], expense_participants?: ExpenseParticipant[]}
+type Settlement = Partial<Database['public']['Tables']['settlements']['Row']>
+type ExpensePayer = Partial<Database['public']['Tables']['expense_payers']['Row']>
+type ExpenseParticipant = Partial<Database['public']['Tables']['expense_participants']['Row']>
 
 export const useSupabaseData = () => {
   const user = useUser();
@@ -55,16 +60,13 @@ export const useSupabaseData = () => {
 
       if (expensesError) throw expensesError;
 
-      const formattedExpenses: Expense[] = expensesData.map(exp => ({
+      const formattedExpenses: Partial<Database['public']['Tables']['expenses']['Row']>[] = expensesData.map(exp => ({
         description: exp.description,
         amount: exp.amount,
-        splitAmount: exp.split_amount,
+        split_amount: exp.split_amount,
         date: exp.date,
-        payers: exp.expense_payers.reduce((acc: { [key: string]: number }, p: any) => {
-          acc[p.payer] = p.amount;
-          return acc;
-        }, {}),
-        participants: exp.expense_participants.map((p: any) => p.participant)
+        expense_payers: exp.expense_payers,
+        expense_participants: exp.expense_participants
       }));
 
       setExpenses(formattedExpenses);
@@ -81,8 +83,8 @@ export const useSupabaseData = () => {
       if (settlementsError) throw settlementsError;
 
       const formattedSettlements: Settlement[] = settlementsData.map(s => ({
-        from: s.from_friend,
-        to: s.to_friend,
+        from_friend: s.from_friend,
+        to_friend: s.to_friend,
         amount: s.amount,
         paid: s.paid,
         date: s.date
@@ -90,8 +92,8 @@ export const useSupabaseData = () => {
 
       setSettlements(formattedSettlements);
       setLoading(prev => ({ ...prev, settlements: false }));
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
       setLoading({
         friends: false,
         expenses: false,
@@ -108,8 +110,8 @@ export const useSupabaseData = () => {
       
       if (error) throw error;
       await fetchData();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     }
   };
 
@@ -123,8 +125,8 @@ export const useSupabaseData = () => {
       
       if (error) throw error;
       await fetchData();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     }
   };
 
@@ -144,13 +146,13 @@ export const useSupabaseData = () => {
       
       expenses.forEach(expense => {
         // Add amounts paid by each person
-        Object.entries(expense.payers).forEach(([payer, amount]) => {
-          balances[payer] = (balances[payer] || 0) + amount;
+        expense.expense_payers?.forEach((p: ExpensePayer) => {
+          balances[p!.payer!] = (balances[p!.payer!] || 0) + p!.amount!;
         });
         
         // Subtract split amounts for each participant
-        expense.participants.forEach(participant => {
-          balances[participant] = (balances[participant] || 0) - expense.splitAmount;
+        expense.expense_participants?.forEach((p: ExpenseParticipant) => {
+          balances[p!.participant!] = (balances[p!.participant!] || 0) - expense!.split_amount!;
         });
       });
 
@@ -223,8 +225,8 @@ export const useSupabaseData = () => {
           
         if (insertError) throw insertError;
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     }
   };
 
@@ -237,44 +239,44 @@ export const useSupabaseData = () => {
           user_id: user!.id,
           description: expense.description,
           amount: expense.amount,
-          split_amount: expense.splitAmount,
+          split_amount: expense.split_amount,
           date: expense.date
-        })
+        } as Database['public']['Tables']['expenses']['Insert'])
         .select()
         .single();
 
       if (expenseError) throw expenseError;
 
       // Insert payers
-      const payersToInsert = Object.entries(expense.payers).map(([payer, amount]) => ({
+      const payersToInsert = expense.expense_payers?.map((p: ExpensePayer) => ({
         expense_id: expenseData.id,
-        payer,
-        amount
+        payer: p.payer,
+        amount: p.amount
       }));
 
       const { error: payersError } = await supabase
         .from('expense_payers')
-        .insert(payersToInsert);
+        .insert(payersToInsert as Database['public']['Tables']['expense_payers']['Insert'][]);
 
       if (payersError) throw payersError;
 
       // Insert participants
-      const participantsToInsert = expense.participants.map(participant => ({
+      const participantsToInsert = expense.expense_participants?.map((p: ExpenseParticipant) => ({
         expense_id: expenseData.id,
-        participant
+        participant: p.participant
       }));
 
       const { error: participantsError } = await supabase
         .from('expense_participants')
-        .insert(participantsToInsert);
+        .insert(participantsToInsert as Database['public']['Tables']['expense_participants']['Insert'][]);
 
       if (participantsError) throw participantsError;
 
       await fetchData();
       // Calculate and create settlements after adding a new expense
       await calculateAndCreateSettlements([...expenses, expense]);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     }
   };
 
@@ -285,8 +287,8 @@ export const useSupabaseData = () => {
         .from('expenses')
         .select('id')
         .eq('user_id', user!.id)
-        .eq('description', expense.description)
-        .eq('amount', expense.amount)
+        .eq('description', expense.description!)
+        .eq('amount', expense.amount!)
         .single();
 
       if (expenseData) {
@@ -298,8 +300,8 @@ export const useSupabaseData = () => {
         if (error) throw error;
         await fetchData();
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     }
   };
 
@@ -315,16 +317,16 @@ export const useSupabaseData = () => {
           date: settlement.date
         })
         .eq('user_id', user!.id)
-        .eq('from_friend', settlement.from)
-        .eq('to_friend', settlement.to)
-        .eq('amount', settlement.amount);
+        .eq('from_friend', settlement.from_friend!)
+        .eq('to_friend', settlement.to_friend!)
+        .eq('amount', settlement.amount!);
 
       console.log({error});
       
       if (error) throw error;
       await fetchData();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     }
   };
 

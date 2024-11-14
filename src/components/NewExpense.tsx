@@ -1,6 +1,6 @@
-import { DollarSign, Plus, Receipt, Users, Percent } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Payers } from '@/types';
+import { DollarSign, Percent, Receipt, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface NewExpenseProps {
@@ -93,18 +93,6 @@ export function NewExpense({
     if (!isNaN(amount) && amount > 0) {
       const splitAmount = (amount / participants.size).toFixed(2);
       participants.forEach(participant => {
-        onPayerAmountChange(participant, splitAmount);
-      });
-    }
-  };
-
-  const handleSplitByPercentage = () => {
-    setSplitType('percentage');
-    const amount = parseFloat(totalAmount);
-    if (!isNaN(amount) && amount > 0) {
-      const percentage = (100 / participants.size).toFixed(2);
-      participants.forEach(participant => {
-        const splitAmount = ((amount * parseFloat(percentage)) / 100).toFixed(2);
         onPayerAmountChange(participant, splitAmount);
       });
     }

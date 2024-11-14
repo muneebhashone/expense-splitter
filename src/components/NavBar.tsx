@@ -1,19 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { User } from '@supabase/auth-helpers-nextjs';
-import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from "@/components/ui/dropdown-menu";
+import { createClientComponentClient, User } from '@supabase/auth-helpers-nextjs';
+import { Menu } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 export default function NavBar({ user }: { user: User | null }) {
@@ -26,8 +23,8 @@ export default function NavBar({ user }: { user: User | null }) {
       toast.success('Signed out successfully');
       router.push('/login');
       router.refresh();
-    } catch (error) {
-      toast.error('Error signing out');
+    } catch (error: unknown) {
+      toast.error((error as Error).message);
     }
   };
 
