@@ -132,47 +132,26 @@ export const useSupabaseData = () => {
 
       // Process only the new expense
       if (
-        newExpense.expense_payers &&
-        newExpense.expense_participants &&
-        newExpense.split_amount
+        !newExpense.expense_payers ||
+        !newExpense.expense_participants ||
+        !newExpense.split_amount
       ) {
-        // Add amounts paid by each person
-        newExpense.expense_payers.forEach((p) => {
-          if (p.payer && p.amount) {
-            balances[p.payer] = (balances[p.payer] || 0) + p.amount;
-          }
-        });
-
-        // Subtract split amounts for each participant
-        newExpense.expense_participants.forEach((p) => {
-          if (p.participant) {
-            balances[p.participant] =
-              (balances[p.participant] || 0) - newExpense.split_amount!;
-          }
-        });
+        return;
       }
-        if (
-          !expense.expense_payers ||
-          !expense.expense_participants ||
-          !expense.split_amount
-        ) {
-          return;
+
+      // Add amounts paid by each person
+      newExpense.expense_payers.forEach((p) => {
+        if (p.payer && p.amount) {
+          balances[p.payer] = (balances[p.payer] || 0) + p.amount;
         }
+      });
 
-        // Add amounts paid by each person
-        expense.expense_payers.forEach((p) => {
-          if (p.payer && p.amount) {
-            balances[p.payer] = (balances[p.payer] || 0) + p.amount;
-          }
-        });
-
-        // Subtract split amounts for each participant
-        expense.expense_participants.forEach((p) => {
-          if (p.participant) {
-            balances[p.participant] =
-              (balances[p.participant] || 0) - expense.split_amount!;
-          }
-        });
+      // Subtract split amounts for each participant
+      newExpense.expense_participants.forEach((p) => {
+        if (p.participant) {
+          balances[p.participant] =
+            (balances[p.participant] || 0) - newExpense.split_amount!;
+        }
       });
 
       // Create settlements based on remaining balances
@@ -211,7 +190,7 @@ export const useSupabaseData = () => {
           amount: settlementAmount,
           paid: false,
           date: new Date().toISOString(),
-          expense_id: Number(expenseId),
+          expense_id: expenseId,
         });
 
         balances[creditor] -= settlementAmount;
