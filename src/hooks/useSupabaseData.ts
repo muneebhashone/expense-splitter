@@ -324,8 +324,25 @@ export const useSupabaseData = () => {
 
   const updateSettlement = async (settlement: FrontendSettlement) => {
     try {
+      // Find the existing settlement
+      const { data: existingSettlement, error: findError } = await supabase
+        .from('settlements')
+        .select('id')
+        .eq('user_id', user!.id)
+        .eq('from_friend', settlement.from)
+        .eq('to_friend', settlement.to)
+        .eq('paid', false)
+        .single();
+
+      if (findError) throw findError;
+
+      if (!existingSettlement) {
+        throw new Error('Settlement not found');
+      }
+
+      // If this is a partial settlement
       if (settlement.paid) {
-        // For paid settlements, create a new entry
+        // Create a new completed settlement entry for the partial amount
         const { error: insertError } = await supabase
           .from('settlements')
           .insert({
@@ -338,23 +355,19 @@ export const useSupabaseData = () => {
           });
         
         if (insertError) throw insertError;
-      } else {
-        // For unpaid settlements (remaining amount), update existing entry
-        const { data: existingSettlement, error: findError } = await supabase
+
+        // Update the existing settlement with the remaining amount
+        const { error: updateError } = await supabase
           .from('settlements')
-          .select('id')
-          .eq('user_id', user!.id)
-          .eq('from_friend', settlement.from)
-          .eq('to_friend', settlement.to)
-          .eq('paid', false)
-          .single();
-
-        if (findError) throw findError;
-
-        if (!existingSettlement) {
-          throw new Error('Settlement not found');
-        }
-
+          .update({
+            amount: settlement.amount, // This will be the remaining amount
+            date: new Date().toISOString()
+          })
+          .eq('id', existingSettlement.id);
+        
+        if (updateError) throw updateError;
+      } else {
+        // Just update the existing settlement
         const { error: updateError } = await supabase
           .from('settlements')
           .update({

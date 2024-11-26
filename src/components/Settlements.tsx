@@ -86,22 +86,13 @@ export function Settlements({ settlements, onSettlementPaid, onClearSettlements,
                               return;
                             }
 
-                            // Create settlement for the partial amount
+                            // Handle partial settlement
                             onSettlementPaid({
                               from: settlement.from_friend!,
                               to: settlement.to_friend!,
                               amount: partialAmount,
                               paid: true,
                               date: new Date().toISOString()
-                            });
-
-                            // Update the original settlement with remaining amount
-                            onSettlementPaid({
-                              from: settlement.from_friend!,
-                              to: settlement.to_friend!,
-                              amount: settlement.amount! - partialAmount,
-                              paid: false,
-                              date: settlement.date!
                             });
 
                             input.value = '';
