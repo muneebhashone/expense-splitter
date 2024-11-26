@@ -9,6 +9,7 @@ import { Settlements } from '@/components/Settlements';
 import { Header } from '@/components/Header';
 import { TabNavigation } from '@/components/TabNavigation';
 import { Expense as ExpenseType, Settlement as SettlementType } from '@/hooks/useSupabaseData';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const ExpenseSplitter = () => {
   const {
