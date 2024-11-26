@@ -17,11 +17,12 @@ import { Expense } from '@/hooks/useSupabaseData';
 
 interface ExpensesListProps {
   expenses: Expense[];
-  onDeleteExpense: (index: number) => void;
+  onDeleteExpense: (indices: number[]) => void;
   loading?: boolean;
 }
 
 export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesListProps) {
+  const [selectedExpenses, setSelectedExpenses] = useState<number[]>([]);
   if (loading) {
     return (
       <LoadingCard
@@ -46,9 +47,43 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
             </CardTitle>
             <CardDescription>Review all shared expenses</CardDescription>
           </div>
-          <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-            {expenses.length} expenses
-          </span>
+          <div className="flex items-center gap-3">
+            {selectedExpenses.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className="text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete ({selectedExpenses.length})
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Multiple Expenses</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {selectedExpenses.length} selected expenses? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setSelectedExpenses([])}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        onDeleteExpense(selectedExpenses);
+                        setSelectedExpenses([]);
+                      }}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+              {expenses.length} expenses
+            </span>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -61,8 +96,22 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
         ) : (
           <div className="space-y-4">
             {expenses.map((expense, index) => (
-              <div key={index} className="bg-white p-4 rounded-lg border hover:border-purple-200 transition-colors group">
-                <div className="flex justify-between items-start">
+              <div key={index} className="bg-white p-4 rounded-lg border hover:border-purple-200 transition-colors group relative">
+                <div className="absolute left-4 top-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedExpenses.includes(index)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedExpenses([...selectedExpenses, index]);
+                      } else {
+                        setSelectedExpenses(selectedExpenses.filter(i => i !== index));
+                      }
+                    }}
+                    className="h-4 w-4 text-purple-500 rounded border-gray-300 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="flex justify-between items-start pl-8">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-medium text-gray-900">{expense.description}</h3>
@@ -93,33 +142,35 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
                     </div>
                   </div>
                   
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button
-                        className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Delete expense"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Expense</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this expense? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => onDeleteExpense(index)}
-                          className="bg-red-500 hover:bg-red-600"
+                  {!selectedExpenses.length && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete expense"
                         >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Expense</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this expense? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDeleteExpense([index])}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               </div>
             ))}
