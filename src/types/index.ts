@@ -3,6 +3,7 @@ export interface Payers {
 }
 
 export interface Expense {
+  id: number;
   payers: Payers;
   amount: number;
   description: string;

@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowRight, CheckCircle, Trash2 } from "lucide-react";
 import {
   Card,
@@ -9,13 +11,15 @@ import {
 import { LoadingCard } from "./ui/loading-card";
 import { Settlement as SettlementType } from "@/hooks/useSupabaseData";
 import { formatDistanceToNow } from "date-fns";
-import { Settlement } from "@/types";
+import { Expense, Settlement } from "@/types";
+import { useMemo } from "react";
 
 interface SettlementsProps {
   settlements: SettlementType[];
   onSettlementPaid: (settlement: Settlement & { remaining: number }) => void;
   onClearSettlements: () => void;
   loading?: boolean;
+  expenses: Expense[];
 }
 
 export function Settlements({
@@ -23,7 +27,16 @@ export function Settlements({
   onSettlementPaid,
   onClearSettlements,
   loading,
+  expenses,
 }: SettlementsProps) {
+
+  const expenseIdToExpenseMapper = useMemo(() => {
+    return expenses.reduce((acc, expense) => {
+      acc[expense.id] = expense;
+      return acc;
+    }, {} as Record<number, Expense>);
+  }, [expenses]);
+
   if (loading) {
     return (
       <LoadingCard
@@ -35,6 +48,8 @@ export function Settlements({
       />
     );
   }
+
+ 
 
   const unpaidSettlements = settlements.filter((s) => !s.paid);
   const paidSettlements = settlements.filter((s) => s.paid);
@@ -74,6 +89,9 @@ export function Settlements({
                       <span className="font-medium text-gray-900">
                         {settlement.to_friend}
                       </span>
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
+                      {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
+                    </span>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -185,6 +203,9 @@ export function Settlements({
                       <span className="text-gray-500">
                         {settlement.to_friend}
                       </span>
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
+                      {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
+                    </span>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500">
@@ -197,6 +218,7 @@ export function Settlements({
                             })
                           : ""}
                       </span>
+                      
                     </div>
                   </div>
                 </div>

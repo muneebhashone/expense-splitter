@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Payers, Settlement } from '@/types';
 import { FriendsList } from '@/components/FriendsList';
@@ -95,6 +95,8 @@ const ExpenseSplitter = () => {
   const [expensesToDelete, setExpensesToDelete] = useState<string[]>([]);
   const [settlementsToClear, setSettlementsToClear] = useState(false);
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | 'all'>('all');
+  const [selectedFromFriend, setSelectedFromFriend] = useState<string>('');
+  const [selectedToFriend, setSelectedToFriend] = useState<string>('');
 
   const handleDeleteExpense = (indices: number[]) => {
     // Convert indices to expense IDs
@@ -136,7 +138,24 @@ const ExpenseSplitter = () => {
     await updateSettlement(updatedSettlement);
   };
 
-  console.log(selectedExpenseId, settlements);
+  const filteredSettlements = useMemo(() => {
+    let updatedSettlements = settlements;
+    
+    if (selectedExpenseId !== 'all') {
+      updatedSettlements = settlements.filter(s => s.expense_id === Number(selectedExpenseId));
+    } 
+
+    if (selectedFromFriend !== '' && selectedFromFriend !== 'all') {
+      updatedSettlements = updatedSettlements.filter(s => s.from_friend === selectedFromFriend);
+    }
+    
+    if (selectedToFriend !== '' && selectedToFriend !== 'all') {
+      updatedSettlements = updatedSettlements.filter(s => s.to_friend === selectedToFriend);
+    }
+
+    return updatedSettlements;
+  }, [settlements, selectedExpenseId, selectedFromFriend, selectedToFriend]);
+
 
   if (error) {
     return (
@@ -209,6 +228,7 @@ const ExpenseSplitter = () => {
       label: 'Settlements',
       content: (
         <div className="space-y-4">
+          <div className="flex gap-4">
           <Select 
             value={selectedExpenseId}
             onValueChange={(value) => setSelectedExpenseId(value as string)}
@@ -225,11 +245,46 @@ const ExpenseSplitter = () => {
             ))}
           </SelectContent>
           </Select>
+
+          <Select 
+            value={selectedFromFriend}
+            onValueChange={(value) => setSelectedFromFriend(value as string)}
+          >
+            <SelectTrigger> 
+              <SelectValue placeholder="Select a from friend" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Friends</SelectItem>
+              {friends.map((friend) => (
+              <SelectItem key={friend} value={friend}>
+                {friend}
+              </SelectItem>
+            ))}
+          </SelectContent>
+          </Select>
+
+          <Select 
+            value={selectedToFriend}
+            onValueChange={(value) => setSelectedToFriend(value as string)}
+          >
+            <SelectTrigger> 
+                <SelectValue placeholder="Select a to friend" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Friends</SelectItem>
+              {friends.map((friend) => (
+              <SelectItem key={friend} value={friend}>
+                {friend}
+              </SelectItem>
+            ))}
+          </SelectContent>
+          </Select>
           
+          
+          </div>
           <Settlements
-          settlements={selectedExpenseId === 'all' 
-            ? settlements 
-            : settlements.filter(s => s.expense_id === Number(selectedExpenseId))}
+          expenses={expenses}
+          settlements={filteredSettlements}
           onSettlementPaid={handleSettlementUpdate}
           onClearSettlements={() => {
             setDialogOpen(true);
