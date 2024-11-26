@@ -123,7 +123,7 @@ const ExpenseSplitter = () => {
     });
   };
 
-  const handleSettlementUpdate = async (settlement: Settlement) => {
+  const handleSettlementUpdate = async (settlement: Settlement & { remaining: number }) => {
     const updatedSettlement = {
       ...settlement,
       from_friend: settlement.from,
@@ -204,6 +204,8 @@ const ExpenseSplitter = () => {
       id: 'settlements',
       label: 'Settlements',
       content: (
+        <div>
+        
         <Settlements
           settlements={settlements}
           onSettlementPaid={handleSettlementUpdate}
@@ -213,6 +215,7 @@ const ExpenseSplitter = () => {
           }}
           loading={loadingSettlements}
         />
+        </div>
       )
     }
   ];
