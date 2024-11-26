@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CheckCircle, Trash2 } from "lucide-react";
+import { ArrowRight, CheckCircle, Eye, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -8,11 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { LoadingCard } from "./ui/loading-card";
 import { Settlement as SettlementType } from "@/hooks/useSupabaseData";
 import { formatDistanceToNow } from "date-fns";
 import { Expense, Settlement } from "@/types";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface SettlementsProps {
   settlements: SettlementType[];
@@ -22,6 +28,12 @@ interface SettlementsProps {
   expenses: Expense[];
 }
 
+interface NetSettlement {
+  from: string;
+  to: string;
+  amount: number;
+}
+
 export function Settlements({
   settlements,
   onSettlementPaid,
@@ -29,6 +41,7 @@ export function Settlements({
   loading,
   expenses,
 }: SettlementsProps) {
+  const [isEasyViewOpen, setIsEasyViewOpen] = useState(false);
 
   const expenseIdToExpenseMapper = useMemo(() => {
     return expenses.reduce((acc, expense) => {
@@ -36,6 +49,40 @@ export function Settlements({
       return acc;
     }, {} as Record<number, Expense>);
   }, [expenses]);
+
+  const netSettlements = useMemo(() => {
+    const unpaidSettlements = settlements.filter((s) => !s.paid);
+    const settlementMap = new Map<string, number>();
+
+    // Calculate net amounts between friends
+    unpaidSettlements.forEach((settlement) => {
+      const key = [settlement.from_friend, settlement.to_friend].sort().join('-');
+      const amount = settlement.amount || 0;
+      
+      if (settlement.from_friend && settlement.to_friend) {
+        if (settlement.from_friend < settlement.to_friend) {
+          settlementMap.set(key, (settlementMap.get(key) || 0) + amount);
+        } else {
+          settlementMap.set(key, (settlementMap.get(key) || 0) - amount);
+        }
+      }
+    });
+
+    // Convert to final settlements
+    const result: NetSettlement[] = [];
+    settlementMap.forEach((amount, key) => {
+      if (amount !== 0) {
+        const [friend1, friend2] = key.split('-');
+        if (amount > 0) {
+          result.push({ from: friend1, to: friend2, amount });
+        } else {
+          result.push({ from: friend2, to: friend1, amount: Math.abs(amount) });
+        }
+      }
+    });
+
+    return result;
+  }, [settlements]);
 
   if (loading) {
     return (
@@ -48,8 +95,6 @@ export function Settlements({
       />
     );
   }
-
- 
 
   const unpaidSettlements = settlements.filter((s) => !s.paid);
   const paidSettlements = settlements.filter((s) => s.paid);
@@ -74,7 +119,16 @@ export function Settlements({
           {/* Unpaid Settlements */}
           {unpaidSettlements.length > 0 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-gray-900">Pending Settlements</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-gray-900">Pending Settlements</h3>
+                <button
+                  onClick={() => setIsEasyViewOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 transition-colors rounded-md hover:bg-blue-50"
+                >
+                  <Eye className="h-4 w-4" />
+                  Easy View
+                </button>
+              </div>
               {unpaidSettlements.map((settlement, index) => (
                 <div
                   key={index}
@@ -89,9 +143,9 @@ export function Settlements({
                       <span className="font-medium text-gray-900">
                         {settlement.to_friend}
                       </span>
-                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
-                      {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
-                    </span>
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
+                        {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
+                      </span>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -204,8 +258,8 @@ export function Settlements({
                         {settlement.to_friend}
                       </span>
                       <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
-                      {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
-                    </span>
+                        {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
+                      </span>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500">
@@ -218,7 +272,6 @@ export function Settlements({
                             })
                           : ""}
                       </span>
-                      
                     </div>
                   </div>
                 </div>
@@ -226,6 +279,37 @@ export function Settlements({
             </div>
           )}
         </div>
+
+        {/* Easy View Dialog */}
+        <Dialog open={isEasyViewOpen} onOpenChange={setIsEasyViewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Settlement Summary</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              {netSettlements.length === 0 ? (
+                <p className="text-gray-500 text-center">No pending settlements</p>
+              ) : (
+                netSettlements.map((settlement, index) => (
+                  <div
+                    key={index}
+                    className="p-4 bg-gray-50 rounded-lg flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{settlement.from}</span>
+                      <span className="text-gray-500">will pay</span>
+                      <span className="font-medium text-green-600">
+                        ${settlement.amount.toFixed(2)}
+                      </span>
+                      <span className="text-gray-500">to</span>
+                      <span className="font-medium">{settlement.to}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
