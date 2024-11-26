@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingCard } from './ui/loading-card';
 import { Settlement as SettlementType } from '@/hooks/useSupabaseData';
@@ -8,10 +8,11 @@ import { Settlement } from '@/types';
 interface SettlementsProps {
   settlements: SettlementType[];
   onSettlementPaid: (settlement: Settlement) => void;
+  onClearSettlements: () => void;
   loading?: boolean;
 }
 
-export function Settlements({ settlements, onSettlementPaid, loading }: SettlementsProps) {
+export function Settlements({ settlements, onSettlementPaid, onClearSettlements, loading }: SettlementsProps) {
   if (loading) {
     return (
       <LoadingCard
@@ -78,7 +79,16 @@ export function Settlements({ settlements, onSettlementPaid, loading }: Settleme
           {/* Paid Settlements */}
           {paidSettlements.length > 0 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-gray-900">Completed Settlements</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-gray-900">Completed Settlements</h3>
+                <button
+                  onClick={onClearSettlements}
+                  className="flex items-center gap-2 px-3 py-1 text-sm text-red-600 hover:text-red-700 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Clear Completed
+                </button>
+              </div>
               {paidSettlements.map((settlement, index) => (
                 <div key={index} className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center justify-between">

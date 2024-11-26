@@ -22,7 +22,8 @@ const ExpenseSplitter = () => {
     deleteFriend,
     addExpense,
     deleteExpense,
-    updateSettlement
+    updateSettlement,
+    clearSettlements
   } = useSupabaseData();
   
   const [newFriend, setNewFriend] = useState<string>('');
@@ -78,6 +79,7 @@ const ExpenseSplitter = () => {
   };
 
   const [expensesToDelete, setExpensesToDelete] = useState<number[]>([]);
+  const [settlementsToClear, setSettlementsToClear] = useState(false);
 
   const handleDeleteExpense = (expenseIndices: number[]) => {
     setExpensesToDelete(expenseIndices);
@@ -189,6 +191,10 @@ const ExpenseSplitter = () => {
         <Settlements
           settlements={settlements as SettlementType[]}
           onSettlementPaid={handleSettlementUpdate}
+          onClearSettlements={() => {
+            setDialogOpen(true);
+            setSettlementsToClear(true);
+          }}
           loading={loadingSettlements}
         />
       )
@@ -206,13 +212,25 @@ const ExpenseSplitter = () => {
                 ? `Are you sure you want to delete ${friendToDelete}? This will affect all related expenses and settlements.`
                 : expensesToDelete.length > 0
                 ? `Are you sure you want to delete ${expensesToDelete.length} expense${expensesToDelete.length > 1 ? 's' : ''}?`
+                : settlementsToClear
+                ? 'Are you sure you want to clear all completed settlements? This action cannot be undone.'
                 : ''}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-start">
             <button
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              onClick={friendToDelete ? confirmDeleteFriend : confirmDeleteExpense}
+              onClick={() => {
+                if (friendToDelete) {
+                  confirmDeleteFriend();
+                } else if (expensesToDelete.length > 0) {
+                  confirmDeleteExpense();
+                } else if (settlementsToClear) {
+                  clearSettlements();
+                  setSettlementsToClear(false);
+                  setDialogOpen(false);
+                }
+              }}
             >
               Delete
             </button>
