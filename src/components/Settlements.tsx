@@ -56,19 +56,74 @@ export function Settlements({ settlements, onSettlementPaid, onClearSettlements,
                       <span className="font-medium text-gray-900">{settlement.to_friend}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-medium text-gray-900">${settlement.amount?.toFixed(2)}</span>
-                      <button
-                        onClick={() => onSettlementPaid({
-                          from: settlement!.from_friend!,
-                          to: settlement!.to_friend!,
-                          amount: settlement!.amount!,
-                          paid: true,
-                          date: settlement!.date!
-                        })}
-                        className="text-green-500 hover:text-green-600 transition-colors"
-                      >
-                        <CheckCircle className="h-5 w-5" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">${settlement.amount?.toFixed(2)}</span>
+                        <input
+                          type="number"
+                          placeholder="Partial amount"
+                          className="w-24 px-2 py-1 border rounded"
+                          min="0"
+                          max={settlement.amount}
+                          step="0.01"
+                          onChange={(e) => {
+                            const input = e.target.value;
+                            const element = e.target;
+                            const value = parseFloat(input);
+                            if (value > settlement.amount!) {
+                              element.setCustomValidity(`Cannot exceed ${settlement.amount}`);
+                            } else {
+                              element.setCustomValidity('');
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={(e) => {
+                            const input = (e.target as HTMLElement)
+                              .parentElement?.querySelector('input') as HTMLInputElement;
+                            const partialAmount = parseFloat(input.value);
+                            
+                            if (isNaN(partialAmount) || partialAmount <= 0 || partialAmount > settlement.amount!) {
+                              return;
+                            }
+
+                            // Create settlement for the partial amount
+                            onSettlementPaid({
+                              from: settlement.from_friend!,
+                              to: settlement.to_friend!,
+                              amount: partialAmount,
+                              paid: true,
+                              date: new Date().toISOString()
+                            });
+
+                            // Update the original settlement with remaining amount
+                            onSettlementPaid({
+                              from: settlement.from_friend!,
+                              to: settlement.to_friend!,
+                              amount: settlement.amount! - partialAmount,
+                              paid: false,
+                              date: settlement.date!
+                            });
+
+                            input.value = '';
+                          }}
+                          className="px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                        >
+                          Settle
+                        </button>
+                        <button
+                          onClick={() => onSettlementPaid({
+                            from: settlement.from_friend!,
+                            to: settlement.to_friend!,
+                            amount: settlement.amount!,
+                            paid: true,
+                            date: new Date().toISOString()
+                          })}
+                          className="text-green-500 hover:text-green-600 transition-colors"
+                          title="Settle full amount"
+                        >
+                          <CheckCircle className="h-5 w-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

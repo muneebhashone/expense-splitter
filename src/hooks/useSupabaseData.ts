@@ -324,31 +324,48 @@ export const useSupabaseData = () => {
 
   const updateSettlement = async (settlement: FrontendSettlement) => {
     try {
-      // Find the settlement in the database
-      const { data: existingSettlement, error: findError } = await supabase
-        .from('settlements')
-        .select('id')
-        .eq('user_id', user!.id)
-        .eq('from_friend', settlement.from)
-        .eq('to_friend', settlement.to)
-        .eq('amount', settlement.amount)
-        .single();
+      if (settlement.paid) {
+        // For paid settlements, create a new entry
+        const { error: insertError } = await supabase
+          .from('settlements')
+          .insert({
+            user_id: user!.id,
+            from_friend: settlement.from,
+            to_friend: settlement.to,
+            amount: settlement.amount,
+            paid: true,
+            date: settlement.date
+          });
+        
+        if (insertError) throw insertError;
+      } else {
+        // For unpaid settlements (remaining amount), update existing entry
+        const { data: existingSettlement, error: findError } = await supabase
+          .from('settlements')
+          .select('id')
+          .eq('user_id', user!.id)
+          .eq('from_friend', settlement.from)
+          .eq('to_friend', settlement.to)
+          .eq('paid', false)
+          .single();
 
-      if (findError) throw findError;
+        if (findError) throw findError;
 
-      if (!existingSettlement) {
-        throw new Error('Settlement not found');
+        if (!existingSettlement) {
+          throw new Error('Settlement not found');
+        }
+
+        const { error: updateError } = await supabase
+          .from('settlements')
+          .update({
+            amount: settlement.amount,
+            date: settlement.date
+          })
+          .eq('id', existingSettlement.id);
+        
+        if (updateError) throw updateError;
       }
-
-      const { error: updateError } = await supabase
-        .from('settlements')
-        .update({
-          paid: settlement.paid,
-          date: settlement.date
-        })
-        .eq('id', existingSettlement.id);
       
-      if (updateError) throw updateError;
       await fetchData();
     } catch (err: unknown) {
       setError((err as Error).message);
