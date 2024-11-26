@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { Payers, Settlement } from '@/types';
+import { Expense, Payers, Settlement } from '@/types';
 import { FriendsList } from '@/components/FriendsList';
 import { NewExpense } from '@/components/NewExpense';
 import { ExpensesList } from '@/components/ExpensesList';
@@ -283,7 +283,7 @@ const ExpenseSplitter = () => {
           
           </div>
           <Settlements
-          expenses={expenses}
+          expenses={expenses as unknown as Expense[]}
           settlements={filteredSettlements}
           onSettlementPaid={handleSettlementUpdate}
           onClearSettlements={() => {
