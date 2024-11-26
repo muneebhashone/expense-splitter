@@ -30,7 +30,6 @@ export default function NavBar({ user }: { user: User | null }) {
 
   const navigation = [
     { name: 'Dashboard', href: '/', current: true },
-    // Add more navigation items as needed
   ];
 
   return (

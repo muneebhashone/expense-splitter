@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
 import { useUser } from '@supabase/auth-helpers-react';
+import { Settlement as FrontendSettlement } from '@/types';
 
-export type Expense = Partial<Database['public']['Tables']['expenses']['Row']> & {expense_payers?: ExpensePayer[], expense_participants?: ExpenseParticipant[]}
-export type Settlement = Partial<Database['public']['Tables']['settlements']['Row']>
-export type ExpensePayer = Partial<Database['public']['Tables']['expense_payers']['Row']>
-export type ExpenseParticipant = Partial<Database['public']['Tables']['expense_participants']['Row']>
+export type Expense = Partial<Database['public']['Tables']['expenses']['Row']> & {
+  expense_payers?: ExpensePayer[],
+  expense_participants?: ExpenseParticipant[]
+}
+export type Settlement = Database['public']['Tables']['settlements']['Row']
+export type ExpensePayer = Database['public']['Tables']['expense_payers']['Row']
+export type ExpenseParticipant = Database['public']['Tables']['expense_participants']['Row']
 
 export const useSupabaseData = () => {
   const user = useUser();
@@ -47,29 +51,15 @@ export const useSupabaseData = () => {
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
         .select(`
-          id,
-          description,
-          amount,
-          split_amount,
-          date,
-          expense_payers (payer, amount),
-          expense_participants (participant)
+          *,
+          expense_payers (id, payer, amount),
+          expense_participants (id, participant)
         `)
         .eq('user_id', user!.id)
         .order('date', { ascending: false });
 
       if (expensesError) throw expensesError;
-
-      const formattedExpenses: Partial<Database['public']['Tables']['expenses']['Row']>[] = expensesData.map(exp => ({
-        description: exp.description,
-        amount: exp.amount,
-        split_amount: exp.split_amount,
-        date: exp.date,
-        expense_payers: exp.expense_payers,
-        expense_participants: exp.expense_participants
-      }));
-
-      setExpenses(formattedExpenses);
+      setExpenses(expensesData as Expense[]);
       setLoading(prev => ({ ...prev, expenses: false }));
 
       // Fetch settlements
@@ -81,16 +71,7 @@ export const useSupabaseData = () => {
         .order('created_at', { ascending: false });
 
       if (settlementsError) throw settlementsError;
-
-      const formattedSettlements: Settlement[] = settlementsData.map(s => ({
-        from_friend: s.from_friend,
-        to_friend: s.to_friend,
-        amount: s.amount,
-        paid: s.paid,
-        date: s.date
-      }));
-
-      setSettlements(formattedSettlements);
+      setSettlements(settlementsData);
       setLoading(prev => ({ ...prev, settlements: false }));
     } catch (err: unknown) {
       setError((err as Error).message);
@@ -130,7 +111,7 @@ export const useSupabaseData = () => {
     }
   };
 
-  const calculateAndCreateSettlements = async (expenses: Expense[]) => {
+  const calculateAndCreateSettlements = async (currentExpenses: Expense[]) => {
     try {
       // Get existing paid settlements
       const { data: paidSettlements, error: paidSettlementsError } = await supabase
@@ -144,15 +125,23 @@ export const useSupabaseData = () => {
       // Calculate net balances for each person, considering paid settlements
       const balances: { [key: string]: number } = {};
       
-      expenses.forEach(expense => {
+      currentExpenses.forEach(expense => {
+        if (!expense.expense_payers || !expense.expense_participants || !expense.split_amount) {
+          return;
+        }
+
         // Add amounts paid by each person
-        expense.expense_payers?.forEach((p: ExpensePayer) => {
-          balances[p!.payer!] = (balances[p!.payer!] || 0) + p!.amount!;
+        expense.expense_payers.forEach(p => {
+          if (p.payer && p.amount) {
+            balances[p.payer] = (balances[p.payer] || 0) + p.amount;
+          }
         });
         
         // Subtract split amounts for each participant
-        expense.expense_participants?.forEach((p: ExpenseParticipant) => {
-          balances[p!.participant!] = (balances[p!.participant!] || 0) - expense!.split_amount!;
+        expense.expense_participants.forEach(p => {
+          if (p.participant) {
+            balances[p.participant] = (balances[p.participant] || 0) - expense.split_amount!;
+          }
         });
       });
 
@@ -163,7 +152,7 @@ export const useSupabaseData = () => {
       });
 
       // Create settlements based on remaining balances
-      const settlements: { from_friend: string; to_friend: string; amount: number }[] = [];
+      const settlements: Database['public']['Tables']['settlements']['Insert'][] = [];
       const people = Object.keys(balances);
       
       // Sort people by their balances (descending)
@@ -187,9 +176,12 @@ export const useSupabaseData = () => {
         const settlementAmount = Math.min(creditorBalance, -debtorBalance);
         
         settlements.push({
+          user_id: user!.id,
           from_friend: debtor,
           to_friend: creditor,
-          amount: settlementAmount
+          amount: settlementAmount,
+          paid: false,
+          date: new Date().toISOString()
         });
         
         balances[creditor] -= settlementAmount;
@@ -212,16 +204,7 @@ export const useSupabaseData = () => {
       if (settlements.length > 0) {
         const { error: insertError } = await supabase
           .from('settlements')
-          .insert(
-            settlements.map(s => ({
-              user_id: user!.id,
-              from_friend: s.from_friend,
-              to_friend: s.to_friend,
-              amount: s.amount,
-              date: new Date().toISOString(),
-              paid: false,
-            }))
-          );
+          .insert(settlements);
           
         if (insertError) throw insertError;
       }
@@ -232,102 +215,140 @@ export const useSupabaseData = () => {
 
   const addExpense = async (expense: Expense) => {
     try {
+      if (!expense.amount || !expense.expense_participants) {
+        throw new Error('Invalid expense data');
+      }
+
+      // Calculate split amount based on number of participants
+      const splitAmount = expense.amount / expense.expense_participants.length;
+
       // Insert expense
       const { data: expenseData, error: expenseError } = await supabase
         .from('expenses')
         .insert({
           user_id: user!.id,
-          description: expense.description,
+          description: expense.description || '',
           amount: expense.amount,
-          split_amount: expense.split_amount,
-          date: expense.date
-        } as Database['public']['Tables']['expenses']['Insert'])
+          split_amount: splitAmount,
+          date: expense.date || new Date().toISOString()
+        })
         .select()
         .single();
 
       if (expenseError) throw expenseError;
 
-      console.log({expense});
-
       // Insert payers
-      const payersToInsert = expense.expense_payers?.map((p: ExpensePayer) => ({
-        expense_id: expenseData.id,
-        payer: p.payer,
-        amount: p.amount
-      }));
+      if (expense.expense_payers && expense.expense_payers.length > 0) {
+        const payersToInsert = expense.expense_payers.map(p => ({
+          expense_id: expenseData.id,
+          payer: p.payer,
+          amount: p.amount
+        }));
 
-      console.log({payersToInsert});
+        const { error: payersError } = await supabase
+          .from('expense_payers')
+          .insert(payersToInsert);
 
-      const { error: payersError } = await supabase
-        .from('expense_payers')
-        .insert(payersToInsert as Database['public']['Tables']['expense_payers']['Insert'][]);
-
-      if (payersError) throw payersError;
+        if (payersError) throw payersError;
+      }
 
       // Insert participants
-      const participantsToInsert = expense.expense_participants?.map((p: ExpenseParticipant) => ({
-        expense_id: expenseData.id,
-        participant: p.participant
-      }));
+      if (expense.expense_participants && expense.expense_participants.length > 0) {
+        const participantsToInsert = expense.expense_participants.map(p => ({
+          expense_id: expenseData.id,
+          participant: p.participant
+        }));
 
-      const { error: participantsError } = await supabase
-        .from('expense_participants')
-        .insert(participantsToInsert as Database['public']['Tables']['expense_participants']['Insert'][]);
+        const { error: participantsError } = await supabase
+          .from('expense_participants')
+          .insert(participantsToInsert);
 
-      if (participantsError) throw participantsError;
-
-      await fetchData();
-      // Calculate and create settlements after adding a new expense
-      await calculateAndCreateSettlements([...expenses, expense]);
-    } catch (err: unknown) {
-      setError((err as Error).message);
-    }
-  };
-
-  const deleteExpense = async (expenseIndex: number) => {
-    try {
-      const expense = expenses[expenseIndex];
-      const { data: expenseData } = await supabase
-        .from('expenses')
-        .select('id')
-        .eq('user_id', user!.id)
-        .eq('description', expense.description!)
-        .eq('amount', expense.amount!)
-        .single();
-
-      if (expenseData) {
-        const { error } = await supabase
-          .from('expenses')
-          .delete()
-          .eq('id', expenseData.id);
-        
-        if (error) throw error;
-        await fetchData();
+        if (participantsError) throw participantsError;
       }
+
+      // Get updated expenses for settlement calculation
+      const { data: updatedExpenses, error: fetchError } = await supabase
+        .from('expenses')
+        .select(`
+          *,
+          expense_payers (id, payer, amount),
+          expense_participants (id, participant)
+        `)
+        .eq('user_id', user!.id)
+        .order('date', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      // Calculate and create settlements with the updated expenses
+      await calculateAndCreateSettlements(updatedExpenses as Expense[]);
+      
+      // Finally, refresh the UI
+      await fetchData();
     } catch (err: unknown) {
       setError((err as Error).message);
+      throw err;
     }
   };
 
-  const updateSettlement = async (settlement: Settlement) => {
-
-    console.log({settlement});
-
+  const deleteExpense = async (expenseId: string) => {
     try {
       const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expenseId);
+      
+      if (error) throw error;
+
+      // Get remaining expenses for settlement calculation
+      const { data: remainingExpenses, error: fetchError } = await supabase
+        .from('expenses')
+        .select(`
+          *,
+          expense_payers (id, payer, amount),
+          expense_participants (id, participant)
+        `)
+        .eq('user_id', user!.id)
+        .order('date', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      // Recalculate settlements with the remaining expenses
+      await calculateAndCreateSettlements(remainingExpenses as Expense[]);
+      
+      // Finally, refresh the UI
+      await fetchData();
+    } catch (err: unknown) {
+      setError((err as Error).message);
+    }
+  };
+
+  const updateSettlement = async (settlement: FrontendSettlement) => {
+    try {
+      // Find the settlement in the database
+      const { data: existingSettlement, error: findError } = await supabase
+        .from('settlements')
+        .select('id')
+        .eq('user_id', user!.id)
+        .eq('from_friend', settlement.from)
+        .eq('to_friend', settlement.to)
+        .eq('amount', settlement.amount)
+        .single();
+
+      if (findError) throw findError;
+
+      if (!existingSettlement) {
+        throw new Error('Settlement not found');
+      }
+
+      const { error: updateError } = await supabase
         .from('settlements')
         .update({
           paid: settlement.paid,
           date: settlement.date
         })
-        .eq('user_id', user!.id)
-        .eq('from_friend', settlement.from_friend!)
-        .eq('to_friend', settlement.to_friend!)
-        .eq('amount', settlement.amount!);
-
-      console.log({error});
+        .eq('id', existingSettlement.id);
       
-      if (error) throw error;
+      if (updateError) throw updateError;
       await fetchData();
     } catch (err: unknown) {
       setError((err as Error).message);

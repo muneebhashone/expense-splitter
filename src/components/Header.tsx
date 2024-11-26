@@ -1,39 +1,36 @@
-import { HandCoins, Save, Upload } from 'lucide-react';
+import { HandCoins } from 'lucide-react';
 
 interface HeaderProps {
   onExportData: () => void;
   onImportData: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  activeTab: string;
 }
 
-export function Header({ onExportData, onImportData }: HeaderProps) {
+const tabThemes = {
+  friends: 'from-blue-500/10 to-transparent',
+  'new-expense': 'from-green-500/10 to-transparent',
+  expenses: 'from-purple-500/10 to-transparent',
+  settlements: 'from-orange-500/10 to-transparent',
+};
+
+type TabThemeKey = keyof typeof tabThemes;
+
+export function Header({ activeTab }: HeaderProps) {
+  const gradientClass = tabThemes[activeTab as TabThemeKey] || tabThemes.friends;
+  const accentColor = {
+    friends: 'text-blue-600',
+    'new-expense': 'text-green-600',
+    expenses: 'text-purple-600',
+    settlements: 'text-orange-600',
+  }[activeTab as TabThemeKey] || 'text-blue-600';
+
   return (
-    <div className="text-center py-6">
-      <h1 className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-3">
-        <HandCoins className="h-8 w-8 text-blue-500" />
+    <div className={`text-center py-8 bg-gradient-to-b ${gradientClass} transition-all duration-500`}>
+      <h1 className="text-4xl font-bold text-foreground flex items-center justify-center gap-3 mb-3">
+        <HandCoins className={`h-10 w-10 ${accentColor} animate-bounce transition-colors duration-500`} />
         Expense Splitter
       </h1>
-      <p className="text-gray-600 mt-2">Split expenses easily with friends</p>
-      
-      <div className="flex justify-center gap-4 mt-4">
-        <button
-          onClick={onExportData}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Save className="h-4 w-4" />
-          Export Data
-        </button>
-        
-        <label className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors cursor-pointer">
-          <Upload className="h-4 w-4" />
-          Import Data
-          <input
-            type="file"
-            accept=".json"
-            onChange={onImportData}
-            className="hidden"
-          />
-        </label>
-      </div>
+      <p className="text-muted-foreground text-lg">Split expenses easily with friends</p>
     </div>
   );
 }

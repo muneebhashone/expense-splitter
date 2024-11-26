@@ -1,3 +1,4 @@
+'use client';
 import { Receipt, Trash2, Users, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -14,6 +15,7 @@ import {
 import { LoadingCard } from './ui/loading-card';
 import { format } from 'date-fns';
 import { Expense } from '@/hooks/useSupabaseData';
+import { useState } from 'react';
 
 interface ExpensesListProps {
   expenses: Expense[];

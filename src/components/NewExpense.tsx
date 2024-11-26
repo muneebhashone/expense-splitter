@@ -74,15 +74,6 @@ export function NewExpense({
       newErrors.payers = 'Total paid amounts must equal the total expense amount';
     }
 
-    // Percentage validation
-    if (splitType === 'custom') {
-      const totalPercentage = Object.values(percentages)
-        .reduce((sum, percent) => sum + (parseFloat(percent) || 0), 0);
-      if (Math.abs(totalPercentage - 100) > 0.01) {
-        newErrors.payers = 'Total percentages must equal 100%';
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -90,9 +81,10 @@ export function NewExpense({
   const handleSplitEqually = () => {
     setSplitType('equal');
     const amount = parseFloat(totalAmount);
-    if (!isNaN(amount) && amount > 0) {
+    if (!isNaN(amount) && amount > 0 && participants.size > 0) {
       const splitAmount = (amount / participants.size).toFixed(2);
-      participants.forEach(participant => {
+      const participantsArray = Array.from(participants);
+      participantsArray.forEach(participant => {
         onPayerAmountChange(participant, splitAmount);
       });
     }
@@ -105,6 +97,12 @@ export function NewExpense({
     const newPercentages: { [key: string]: string } = {};
     participants.forEach(participant => {
       newPercentages[participant] = equalPercentage;
+      // Calculate and update amount based on percentage
+      const amount = parseFloat(totalAmount);
+      if (!isNaN(amount) && amount > 0) {
+        const splitAmount = ((amount * parseFloat(equalPercentage)) / 100).toFixed(2);
+        onPayerAmountChange(participant, splitAmount);
+      }
     });
     setPercentages(newPercentages);
   };
@@ -134,7 +132,26 @@ export function NewExpense({
         }
       }
     });
+
+    // Auto-split when participants change
+    if (splitType === 'equal') {
+      handleSplitEqually();
+    } else if (splitType === 'custom') {
+      handleCustomSplit();
+    }
   }, [participants]);
+
+  // Auto-split when total amount changes
+  useEffect(() => {
+    if (splitType === 'equal') {
+      handleSplitEqually();
+    } else if (splitType === 'custom') {
+      // Recalculate amounts based on existing percentages
+      Object.entries(percentages).forEach(([friend, percentage]) => {
+        handlePercentageChange(friend, percentage);
+      });
+    }
+  }, [totalAmount]);
 
   const handleSubmit = () => {
     if (validateForm()) {

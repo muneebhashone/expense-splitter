@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 @layer base {
   :root {
@@ -63,10 +60,65 @@ body {
 }
 
 @layer base {
-  * {
-    @apply border-border;
+
+  
+  /* Remove focus rings */
+  :focus {
+    outline: none !important;
   }
+  
+  :focus-visible {
+    outline: none !important;
+  }
+  
+  /* Remove tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@layer utilities {
+  .glass-effect {
+    @apply bg-white/30 backdrop-blur-sm;
+  }
+  
+  .tab-shadow {
+    box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
   }
 }

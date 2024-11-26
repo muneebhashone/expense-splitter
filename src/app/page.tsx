@@ -1,14 +1,14 @@
 "use client";
 import { useState } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { Expense, Payers, Settlement } from '@/types';
+import { Payers, Settlement } from '@/types';
 import { FriendsList } from '@/components/FriendsList';
 import { NewExpense } from '@/components/NewExpense';
 import { ExpensesList } from '@/components/ExpensesList';
 import { Settlements } from '@/components/Settlements';
 import { Header } from '@/components/Header';
 import { TabNavigation } from '@/components/TabNavigation';
-import { Expense as ExpenseType, Settlement as SettlementType } from '@/hooks/useSupabaseData';
+import { Expense as ExpenseType } from '@/hooks/useSupabaseData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const ExpenseSplitter = () => {
@@ -60,15 +60,28 @@ const ExpenseSplitter = () => {
     if (description && totalAmount && Object.keys(payers).length > 0 && participants.size > 0) {
       const amount = parseFloat(totalAmount);
       const splitAmount = amount / participants.size;
-      const newExpense: Expense = {
+
+      // Convert payers object to expense_payers array
+      const expense_payers = Object.entries(payers).map(([payer, amount]) => ({
+        payer,
+        amount: parseFloat(amount.toString())
+      })) as ExpenseType['expense_payers'];
+
+      // Convert participants set to expense_participants array
+      const expense_participants = Array.from(participants).map(participant => ({
+        participant
+      })) as ExpenseType['expense_participants'];
+
+      const newExpense: ExpenseType = {
         description,
         amount,
-        payers,
-        participants: Array.from(participants),
-        splitAmount,
-        date: new Date().toISOString()
+        split_amount: splitAmount,
+        date: new Date().toISOString(),
+        expense_payers,
+        expense_participants
       };
-      addExpense(newExpense as Omit<Expense, 'expense_payers' | 'expense_participants'>);
+
+      addExpense(newExpense);
       
       // Reset form
       setDescription('');
@@ -78,19 +91,20 @@ const ExpenseSplitter = () => {
     }
   };
 
-  const [expensesToDelete, setExpensesToDelete] = useState<number[]>([]);
+  const [expensesToDelete, setExpensesToDelete] = useState<string[]>([]);
   const [settlementsToClear, setSettlementsToClear] = useState(false);
 
-  const handleDeleteExpense = (expenseIndices: number[]) => {
-    setExpensesToDelete(expenseIndices);
+  const handleDeleteExpense = (indices: number[]) => {
+    // Convert indices to expense IDs
+    const ids = indices.map(index => expenses[index]?.id).filter((id): id is string => !!id);
+    setExpensesToDelete(ids);
     setDialogOpen(true);
   };
 
   const confirmDeleteExpense = () => {
     if (expensesToDelete.length > 0) {
-      // Delete expenses in reverse order to maintain correct indices
-      [...expensesToDelete].sort((a, b) => b - a).forEach(index => {
-        deleteExpense(index);
+      expensesToDelete.forEach(id => {
+        deleteExpense(id);
       });
       setExpensesToDelete([]);
       setDialogOpen(false);
@@ -112,6 +126,8 @@ const ExpenseSplitter = () => {
   const handleSettlementUpdate = async (settlement: Settlement) => {
     const updatedSettlement = {
       ...settlement,
+      from_friend: settlement.from,
+      to_friend: settlement.to,
       paid: true,
       date: new Date().toISOString()
     };
@@ -178,7 +194,7 @@ const ExpenseSplitter = () => {
       label: 'Expenses',
       content: (
         <ExpensesList
-          expenses={expenses as ExpenseType[]}
+          expenses={expenses}
           onDeleteExpense={handleDeleteExpense}
           loading={loadingExpenses}
         />
@@ -189,7 +205,7 @@ const ExpenseSplitter = () => {
       label: 'Settlements',
       content: (
         <Settlements
-          settlements={settlements as SettlementType[]}
+          settlements={settlements}
           onSettlementPaid={handleSettlementUpdate}
           onClearSettlements={() => {
             setDialogOpen(true);
