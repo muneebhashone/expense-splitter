@@ -122,10 +122,35 @@ export const useSupabaseData = () => {
     expenseId: string
   ) => {
     try {
-      // Calculate net balances for each person, considering paid settlements
+      // Calculate balances only for the new expense
       const balances: { [key: string]: number } = {};
+      
+      const newExpense = currentExpenses.find(expense => expense.id === expenseId);
+      if (!newExpense) {
+        throw new Error("New expense not found");
+      }
 
-      currentExpenses.forEach((expense) => {
+      // Process only the new expense
+      if (
+        newExpense.expense_payers &&
+        newExpense.expense_participants &&
+        newExpense.split_amount
+      ) {
+        // Add amounts paid by each person
+        newExpense.expense_payers.forEach((p) => {
+          if (p.payer && p.amount) {
+            balances[p.payer] = (balances[p.payer] || 0) + p.amount;
+          }
+        });
+
+        // Subtract split amounts for each participant
+        newExpense.expense_participants.forEach((p) => {
+          if (p.participant) {
+            balances[p.participant] =
+              (balances[p.participant] || 0) - newExpense.split_amount!;
+          }
+        });
+      }
         if (
           !expense.expense_payers ||
           !expense.expense_participants ||
@@ -196,14 +221,6 @@ export const useSupabaseData = () => {
         people.sort((a, b) => balances[b] - balances[a]);
       }
 
-      // Delete only unpaid settlements
-      const { error: deleteError } = await supabase
-        .from("settlements")
-        .delete()
-        .eq("user_id", user!.id)
-        .eq("paid", false);
-
-      if (deleteError) throw deleteError;
 
       // Insert new settlements if there are any
       if (settlements.length > 0) {
