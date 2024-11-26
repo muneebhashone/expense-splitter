@@ -247,12 +247,16 @@ export const useSupabaseData = () => {
 
       if (expenseError) throw expenseError;
 
+      console.log({expense});
+
       // Insert payers
       const payersToInsert = expense.expense_payers?.map((p: ExpensePayer) => ({
         expense_id: expenseData.id,
         payer: p.payer,
         amount: p.amount
       }));
+
+      console.log({payersToInsert});
 
       const { error: payersError } = await supabase
         .from('expense_payers')
