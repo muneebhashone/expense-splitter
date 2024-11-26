@@ -77,17 +77,20 @@ const ExpenseSplitter = () => {
     }
   };
 
-  const [expenseToDelete, setExpenseToDelete] = useState<number | null>(null);
+  const [expensesToDelete, setExpensesToDelete] = useState<number[]>([]);
 
-  const handleDeleteExpense = (expenseIndex: number) => {
-    setExpenseToDelete(expenseIndex);
+  const handleDeleteExpense = (expenseIndices: number[]) => {
+    setExpensesToDelete(expenseIndices);
     setDialogOpen(true);
   };
 
   const confirmDeleteExpense = () => {
-    if (expenseToDelete !== null) {
-      deleteExpense(expenseToDelete);
-      setExpenseToDelete(null);
+    if (expensesToDelete.length > 0) {
+      // Delete expenses in reverse order to maintain correct indices
+      [...expensesToDelete].sort((a, b) => b - a).forEach(index => {
+        deleteExpense(index);
+      });
+      setExpensesToDelete([]);
       setDialogOpen(false);
     }
   };
@@ -201,8 +204,8 @@ const ExpenseSplitter = () => {
             <DialogDescription>
               {friendToDelete 
                 ? `Are you sure you want to delete ${friendToDelete}? This will affect all related expenses and settlements.`
-                : expenseToDelete !== null
-                ? 'Are you sure you want to delete this expense?'
+                : expensesToDelete.length > 0
+                ? `Are you sure you want to delete ${expensesToDelete.length} expense${expensesToDelete.length > 1 ? 's' : ''}?`
                 : ''}
             </DialogDescription>
           </DialogHeader>
