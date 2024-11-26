@@ -135,6 +135,8 @@ const ExpenseSplitter = () => {
     await updateSettlement(updatedSettlement);
   };
 
+  console.log(selectedExpenseId, settlements);
+
   if (error) {
     return (
       <div className="max-w-7xl mx-auto p-4">
@@ -212,7 +214,7 @@ const ExpenseSplitter = () => {
             onChange={(e) => setSelectedExpenseId(e.target.value as string)}
           >
             <option value="all">All Expenses</option>
-            {expenses.map((expense, index) => (
+            {expenses.map((expense) => (
               <option key={expense.id} value={expense.id}>
                 {expense.description} (${expense.amount})
               </option>
@@ -222,7 +224,7 @@ const ExpenseSplitter = () => {
           <Settlements
           settlements={selectedExpenseId === 'all' 
             ? settlements 
-            : settlements.filter(s => s.expense_id === selectedExpenseId)}
+            : settlements.filter(s => s.expense_id === Number(selectedExpenseId))}
           onSettlementPaid={handleSettlementUpdate}
           onClearSettlements={() => {
             setDialogOpen(true);

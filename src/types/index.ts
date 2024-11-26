@@ -18,6 +18,8 @@ export interface Settlement {
   from: string;
   to: string;
   amount: number;
+  remaining: number;
   paid: boolean;
   date: string | null;
+  expense_id: number;
 }

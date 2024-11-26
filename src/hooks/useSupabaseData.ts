@@ -190,7 +190,7 @@ export const useSupabaseData = () => {
           amount: settlementAmount,
           paid: false,
           date: new Date().toISOString(),
-          expense_id: expenseId,
+          expense_id: Number(expenseId),
         });
 
         balances[creditor] -= settlementAmount;

@@ -111,6 +111,7 @@ export interface Database {
           paid: boolean
           date: string | null
           created_at: string
+          expense_id: number
         }
         Insert: {
           id?: string
@@ -121,6 +122,7 @@ export interface Database {
           paid: boolean
           date?: string | null
           created_at?: string
+          expense_id: number
         }
         Update: {
           id?: string
@@ -131,6 +133,7 @@ export interface Database {
           paid?: boolean
           date?: string | null
           created_at?: string
+          expense_id?: number
         }
       }
     }
