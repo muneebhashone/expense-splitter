@@ -7,8 +7,8 @@ import { NewExpense } from '@/components/NewExpense';
 import { ExpensesList } from '@/components/ExpensesList';
 import { Settlements } from '@/components/Settlements';
 import { Header } from '@/components/Header';
+import { TabNavigation } from '@/components/TabNavigation';
 import { Expense as ExpenseType, Settlement as SettlementType } from '@/hooks/useSupabaseData';
-
 
 const ExpenseSplitter = () => {
   const {
@@ -29,6 +29,7 @@ const ExpenseSplitter = () => {
   const [totalAmount, setTotalAmount] = useState<string>('');
   const [payers, setPayers] = useState<Payers>({});
   const [participants, setParticipants] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState('friends');
 
   const handleAddFriend = () => {
     if (newFriend.trim() && !friends.includes(newFriend.trim())) {
@@ -103,57 +104,87 @@ const ExpenseSplitter = () => {
     );
   }
 
-  return (
-    <div className="max-w-7xl mx-auto p-4 bg-gray-50 min-h-screen">
-      <Header onExportData={() => console.log('Export data')} onImportData={() => console.log('Import data')} />
+  const tabs = [
+    {
+      id: 'friends',
+      label: 'Friends',
+      content: (
+        <FriendsList
+          friends={friends}
+          newFriend={newFriend}
+          onNewFriendChange={setNewFriend}
+          onAddFriend={handleAddFriend}
+          onDeleteFriend={handleDeleteFriend}
+          loading={loadingFriends}
+        />
+      )
+    },
+    {
+      id: 'new-expense',
+      label: 'Add Expense',
+      content: (
+        <NewExpense
+          friends={friends}
+          description={description}
+          totalAmount={totalAmount}
+          payers={payers}
+          participants={participants}
+          onDescriptionChange={setDescription}
+          onTotalAmountChange={setTotalAmount}
+          onPayerAmountChange={handlePayerAmountChange}
+          onParticipantToggle={participant => {
+            setParticipants(current => {
+              const newSet = new Set(current);
+              if (newSet.has(participant)) {
+                newSet.delete(participant);
+              } else {
+                newSet.add(participant);
+              }
+              return newSet;
+            });
+          }}
+          onSubmit={handleAddExpense}
+          disabled={loadingExpenses || loadingFriends}
+        />
+      )
+    },
+    {
+      id: 'expenses',
+      label: 'Expenses',
+      content: (
+        <ExpensesList
+          expenses={expenses as ExpenseType[]}
+          onDeleteExpense={handleDeleteExpense}
+          loading={loadingExpenses}
+        />
+      )
+    },
+    {
+      id: 'settlements',
+      label: 'Settlements',
+      content: (
+        <Settlements
+          settlements={settlements as SettlementType[]}
+          onSettlementPaid={handleSettlementUpdate}
+          loading={loadingSettlements}
+        />
+      )
+    }
+  ];
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <FriendsList
-            friends={friends}
-            newFriend={newFriend}
-            onNewFriendChange={setNewFriend}
-            onAddFriend={handleAddFriend}
-            onDeleteFriend={handleDeleteFriend}
-            loading={loadingFriends}
-          />
-          <ExpensesList
-            expenses={expenses as ExpenseType[]}
-            onDeleteExpense={handleDeleteExpense}
-            loading={loadingExpenses}
-          />
-        </div>
-        <div className="space-y-6">
-          <NewExpense
-            friends={friends}
-            description={description}
-            totalAmount={totalAmount}
-            payers={payers}
-            participants={participants}
-            onDescriptionChange={setDescription}
-            onTotalAmountChange={setTotalAmount}
-            onPayerAmountChange={handlePayerAmountChange}
-            onParticipantToggle={participant => {
-              setParticipants(current => {
-                const newSet = new Set(current);
-                if (newSet.has(participant)) {
-                  newSet.delete(participant);
-                } else {
-                  newSet.add(participant);
-                }
-                return newSet;
-              });
-            }}
-            onSubmit={handleAddExpense}
-            disabled={loadingExpenses || loadingFriends}
-          />
-          <Settlements
-            settlements={settlements as SettlementType[]}
-            onSettlementPaid={handleSettlementUpdate}
-            loading={loadingSettlements}
-          />
-        </div>
-      </div>
+  return (
+    <div className="max-w-7xl mx-auto p-4 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <Header 
+        onExportData={() => console.log('Export data')} 
+        onImportData={() => console.log('Import data')} 
+        activeTab={activeTab}
+      />
+      
+      <TabNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
     </div>
   );
 };
