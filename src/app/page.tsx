@@ -38,9 +38,19 @@ const ExpenseSplitter = () => {
     }
   };
 
-  const handleDeleteFriend = (friendToDelete: string) => {
-    if (window.confirm(`Are you sure you want to delete ${friendToDelete}? This will affect all related expenses and settlements.`)) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [friendToDelete, setFriendToDelete] = useState<string | null>(null);
+
+  const handleDeleteFriend = (friend: string) => {
+    setFriendToDelete(friend);
+    setDialogOpen(true);
+  };
+
+  const confirmDeleteFriend = () => {
+    if (friendToDelete) {
       deleteFriend(friendToDelete);
+      setFriendToDelete(null);
+      setDialogOpen(false);
     }
   };
 
@@ -66,9 +76,18 @@ const ExpenseSplitter = () => {
     }
   };
 
+  const [expenseToDelete, setExpenseToDelete] = useState<number | null>(null);
+
   const handleDeleteExpense = (expenseIndex: number) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
-      deleteExpense(expenseIndex);
+    setExpenseToDelete(expenseIndex);
+    setDialogOpen(true);
+  };
+
+  const confirmDeleteExpense = () => {
+    if (expenseToDelete !== null) {
+      deleteExpense(expenseToDelete);
+      setExpenseToDelete(null);
+      setDialogOpen(false);
     }
   };
 
@@ -174,6 +193,34 @@ const ExpenseSplitter = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogDescription>
+              {friendToDelete 
+                ? `Are you sure you want to delete ${friendToDelete}? This will affect all related expenses and settlements.`
+                : expenseToDelete !== null
+                ? 'Are you sure you want to delete this expense?'
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-start">
+            <button
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              onClick={friendToDelete ? confirmDeleteFriend : confirmDeleteExpense}
+            >
+              Delete
+            </button>
+            <button
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 ml-2"
+              onClick={() => setDialogOpen(false)}
+            >
+              Cancel
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Header 
         onExportData={() => console.log('Export data')} 
         onImportData={() => console.log('Import data')} 
