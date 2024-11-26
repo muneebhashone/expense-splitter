@@ -93,6 +93,7 @@ const ExpenseSplitter = () => {
 
   const [expensesToDelete, setExpensesToDelete] = useState<string[]>([]);
   const [settlementsToClear, setSettlementsToClear] = useState(false);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | 'all'>('all');
 
   const handleDeleteExpense = (indices: number[]) => {
     // Convert indices to expense IDs
@@ -204,10 +205,24 @@ const ExpenseSplitter = () => {
       id: 'settlements',
       label: 'Settlements',
       content: (
-        <div>
-        
-        <Settlements
-          settlements={settlements}
+        <div className="space-y-4">
+          <select 
+            className="w-full p-2 border rounded-md"
+            value={selectedExpenseId}
+            onChange={(e) => setSelectedExpenseId(e.target.value as string)}
+          >
+            <option value="all">All Expenses</option>
+            {expenses.map((expense, index) => (
+              <option key={expense.id} value={expense.id}>
+                {expense.description} (${expense.amount})
+              </option>
+            ))}
+          </select>
+          
+          <Settlements
+          settlements={selectedExpenseId === 'all' 
+            ? settlements 
+            : settlements.filter(s => s.expense_id === selectedExpenseId)}
           onSettlementPaid={handleSettlementUpdate}
           onClearSettlements={() => {
             setDialogOpen(true);
