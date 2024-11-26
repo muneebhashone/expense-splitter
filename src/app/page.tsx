@@ -10,6 +10,7 @@ import { Header } from '@/components/Header';
 import { TabNavigation } from '@/components/TabNavigation';
 import { Expense as ExpenseType } from '@/hooks/useSupabaseData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ExpenseSplitter = () => {
   const {
@@ -208,18 +209,22 @@ const ExpenseSplitter = () => {
       label: 'Settlements',
       content: (
         <div className="space-y-4">
-          <select 
-            className="w-full p-2 border rounded-md"
+          <Select 
             value={selectedExpenseId}
-            onChange={(e) => setSelectedExpenseId(e.target.value as string)}
+            onValueChange={(value) => setSelectedExpenseId(value as string)}
           >
-            <option value="all">All Expenses</option>
-            {expenses.map((expense) => (
-              <option key={expense.id} value={expense.id}>
+            <SelectTrigger> 
+              <SelectValue placeholder="Select an expense" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Expenses</SelectItem>
+              {expenses.map((expense) => (
+              <SelectItem key={expense.id} value={expense.id!}>
                 {expense.description} (${expense.amount})
-              </option>
+              </SelectItem>
             ))}
-          </select>
+          </SelectContent>
+          </Select>
           
           <Settlements
           settlements={selectedExpenseId === 'all' 
