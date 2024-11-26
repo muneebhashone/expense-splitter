@@ -334,6 +334,21 @@ export const useSupabaseData = () => {
     }
   };
 
+  const clearSettlements = async () => {
+    try {
+      const { error } = await supabase
+        .from('settlements')
+        .delete()
+        .eq('user_id', user!.id)
+        .eq('paid', true);
+      
+      if (error) throw error;
+      await fetchData();
+    } catch (err: unknown) {
+      setError((err as Error).message);
+    }
+  };
+
   return {
     friends,
     expenses,
@@ -345,6 +360,7 @@ export const useSupabaseData = () => {
     addExpense,
     deleteExpense,
     updateSettlement,
+    clearSettlements,
     refreshData: fetchData
   };
 };
