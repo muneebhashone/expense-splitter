@@ -191,6 +191,7 @@ export function Settlements({
 
                             // Handle partial settlement
                             onSettlementPaid({
+                              id: Number(settlement.id),
                               from: settlement.from_friend!,
                               to: settlement.to_friend!,
                               amount: partialAmount,
@@ -209,6 +210,7 @@ export function Settlements({
                         <button
                           onClick={() =>
                             onSettlementPaid({
+                              id: Number(settlement.id),
                               from: settlement.from_friend!,
                               to: settlement.to_friend!,
                               amount: settlement.amount!,
@@ -318,6 +320,7 @@ export function Settlements({
                         // Mark each settlement as paid
                         relevantSettlements.forEach((s) => {
                           onSettlementPaid({
+                            id: Number(s.id),
                             from: s.from_friend!,
                             to: s.to_friend!,
                             amount: s.amount!,
