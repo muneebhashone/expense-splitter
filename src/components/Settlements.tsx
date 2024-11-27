@@ -134,28 +134,31 @@ export function Settlements({
                   key={index}
                   className="bg-white p-4 rounded-lg border hover:border-yellow-200 transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium text-gray-900">
-                        {settlement.from_friend}
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium text-gray-900">
-                        {settlement.to_friend}
-                      </span>
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">
+                          {settlement.from_friend}
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium text-gray-900">
+                          {settlement.to_friend}
+                        </span>
+                      </div>
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
                         {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="font-medium text-gray-900 whitespace-nowrap">
                           ${settlement.amount?.toFixed(2)}
                         </span>
                         <input
                           type="number"
-                          placeholder="Partial amount"
-                          className="w-24 px-2 py-1 border rounded"
+                          inputMode="decimal"
+                          placeholder="Partial"
+                          className="w-20 sm:w-24 px-2 py-1.5 border rounded text-sm"
                           min="0"
                           max={settlement.amount}
                           step="0.01"
@@ -172,59 +175,61 @@ export function Settlements({
                             }
                           }}
                         />
-                        <button
-                          onClick={(e) => {
-                            const input = (
-                              e.target as HTMLElement
-                            ).parentElement?.querySelector(
-                              "input"
-                            ) as HTMLInputElement;
-                            const partialAmount = parseFloat(input.value);
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              const input = (
+                                e.target as HTMLElement
+                              ).closest('.flex')?.querySelector(
+                                "input"
+                              ) as HTMLInputElement;
+                              const partialAmount = parseFloat(input.value);
 
-                            if (
-                              isNaN(partialAmount) ||
-                              partialAmount <= 0 ||
-                              partialAmount > settlement.amount!
-                            ) {
-                              return;
+                              if (
+                                isNaN(partialAmount) ||
+                                partialAmount <= 0 ||
+                                partialAmount > settlement.amount!
+                              ) {
+                                return;
+                              }
+
+                              // Handle partial settlement
+                              onSettlementPaid({
+                                id: Number(settlement.id),
+                                from: settlement.from_friend!,
+                                to: settlement.to_friend!,
+                                amount: partialAmount,
+                                remaining: settlement.amount! - partialAmount,
+                                paid: true,
+                                date: new Date().toISOString(),
+                                expense_id: settlement.expense_id,
+                              });
+
+                              input.value = "";
+                            }}
+                            className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors min-w-[4rem]"
+                          >
+                            Settle
+                          </button>
+                          <button
+                            onClick={() =>
+                              onSettlementPaid({
+                                id: Number(settlement.id),
+                                from: settlement.from_friend!,
+                                to: settlement.to_friend!,
+                                amount: settlement.amount!,
+                                remaining: 0,
+                                paid: true,
+                                date: new Date().toISOString(),
+                                expense_id: settlement.expense_id,
+                              })
                             }
-
-                            // Handle partial settlement
-                            onSettlementPaid({
-                              id: Number(settlement.id),
-                              from: settlement.from_friend!,
-                              to: settlement.to_friend!,
-                              amount: partialAmount,
-                              remaining: settlement.amount! - partialAmount,
-                              paid: true,
-                              date: new Date().toISOString(),
-                              expense_id: settlement.expense_id,
-                            });
-
-                            input.value = "";
-                          }}
-                          className="px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                        >
-                          Settle
-                        </button>
-                        <button
-                          onClick={() =>
-                            onSettlementPaid({
-                              id: Number(settlement.id),
-                              from: settlement.from_friend!,
-                              to: settlement.to_friend!,
-                              amount: settlement.amount!,
-                              remaining: 0,
-                              paid: true,
-                              date: new Date().toISOString(),
-                              expense_id: settlement.expense_id,
-                            })
-                          }
-                          className="text-green-500 hover:text-green-600 transition-colors"
-                          title="Settle full amount"
-                        >
-                          <CheckCircle className="h-5 w-5" />
-                        </button>
+                            className="p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                            title="Settle full amount"
+                          >
+                            <CheckCircle className="h-5 w-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -250,24 +255,26 @@ export function Settlements({
               </div>
               {paidSettlements.map((settlement, index) => (
                 <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-500">
-                        {settlement.from_friend}
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-500">
-                        {settlement.to_friend}
-                      </span>
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">
+                          {settlement.from_friend}
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-500">
+                          {settlement.to_friend}
+                        </span>
+                      </div>
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full max-w-full overflow-hidden text-ellipsis">
                         {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500">
+                    <div className="flex flex-row justify-between sm:justify-end items-center gap-4">
+                      <span className="text-gray-500 whitespace-nowrap">
                         ${settlement.amount?.toFixed(2)}
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 whitespace-nowrap">
                         {settlement.date
                           ? formatDistanceToNow(new Date(settlement.date), {
                               addSuffix: true,
