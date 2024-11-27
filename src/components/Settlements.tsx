@@ -304,6 +304,38 @@ export function Settlements({
                       <span className="text-gray-500">to</span>
                       <span className="font-medium">{settlement.to}</span>
                     </div>
+                    <button
+                      onClick={() => {
+                        // Find all unpaid settlements between these two friends
+                        const relevantSettlements = unpaidSettlements.filter(
+                          (s) =>
+                            (s.from_friend === settlement.from &&
+                              s.to_friend === settlement.to) ||
+                            (s.from_friend === settlement.to &&
+                              s.to_friend === settlement.from)
+                        );
+
+                        // Mark each settlement as paid
+                        relevantSettlements.forEach((s) => {
+                          onSettlementPaid({
+                            from: s.from_friend!,
+                            to: s.to_friend!,
+                            amount: s.amount!,
+                            remaining: 0,
+                            paid: true,
+                            date: new Date().toISOString(),
+                            expense_id: s.expense_id,
+                          });
+                        });
+
+                        // Close the dialog
+                        setIsEasyViewOpen(false);
+                      }}
+                      className="flex items-center gap-2 px-3 py-1 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Settle All
+                    </button>
                   </div>
                 ))
               )}
