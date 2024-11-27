@@ -291,27 +291,31 @@ export function Settlements({
 
         {/* Easy View Dialog */}
         <Dialog open={isEasyViewOpen} onOpenChange={setIsEasyViewOpen}>
-          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Settlement Summary</DialogTitle>
+          <DialogContent className="sm:max-w-[500px] max-h-[85vh] w-[95vw] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="pb-4 space-y-1.5">
+              <DialogTitle className="text-xl font-semibold">Settlement Summary</DialogTitle>
+              <p className="text-sm text-muted-foreground">Review and settle multiple transactions at once</p>
             </DialogHeader>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-3">
               {netSettlements.length === 0 ? (
                 <p className="text-gray-500 text-center">No pending settlements</p>
               ) : (
                 netSettlements.map((settlement, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-gray-50 rounded-lg flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+                    className="p-4 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg flex flex-col gap-3"
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{settlement.from}</span>
-                      <span className="text-gray-500 text-sm sm:text-base">will pay</span>
-                      <span className="font-medium text-green-600">
-                        ${settlement.amount.toFixed(2)}
-                      </span>
-                      <span className="text-gray-500 text-sm sm:text-base">to</span>
-                      <span className="font-medium">{settlement.to}</span>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-base">{settlement.from}</span>
+                        <span className="font-semibold text-green-600 text-lg">
+                          ${settlement.amount.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Pays to</span>
+                        <span className="font-medium text-base text-foreground">{settlement.to}</span>
+                      </div>
                     </div>
                     <button
                       onClick={() => {
@@ -341,7 +345,7 @@ export function Settlements({
                         // Close the dialog
                         setIsEasyViewOpen(false);
                       }}
-                      className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors w-full sm:w-auto"
+                      className="flex items-center justify-center gap-2 px-4 py-3 text-base font-medium text-white bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-md transition-colors w-full"
                     >
                       <CheckCircle className="h-4 w-4" />
                       Settle All
