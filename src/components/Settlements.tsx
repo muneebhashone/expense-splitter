@@ -291,7 +291,7 @@ export function Settlements({
 
         {/* Easy View Dialog */}
         <Dialog open={isEasyViewOpen} onOpenChange={setIsEasyViewOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Settlement Summary</DialogTitle>
             </DialogHeader>
@@ -302,15 +302,15 @@ export function Settlements({
                 netSettlements.map((settlement, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-gray-50 rounded-lg flex items-center justify-between"
+                    className="p-4 bg-gray-50 rounded-lg flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{settlement.from}</span>
-                      <span className="text-gray-500">will pay</span>
+                      <span className="text-gray-500 text-sm sm:text-base">will pay</span>
                       <span className="font-medium text-green-600">
                         ${settlement.amount.toFixed(2)}
                       </span>
-                      <span className="text-gray-500">to</span>
+                      <span className="text-gray-500 text-sm sm:text-base">to</span>
                       <span className="font-medium">{settlement.to}</span>
                     </div>
                     <button
@@ -341,7 +341,7 @@ export function Settlements({
                         // Close the dialog
                         setIsEasyViewOpen(false);
                       }}
-                      className="flex items-center gap-2 px-3 py-1 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors"
+                      className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors w-full sm:w-auto"
                     >
                       <CheckCircle className="h-4 w-4" />
                       Settle All
