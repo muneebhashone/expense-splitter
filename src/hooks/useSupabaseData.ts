@@ -335,9 +335,10 @@ export const useSupabaseData = () => {
         .from("settlements")
         .select("id, amount")
         .eq("user_id", user!.id)
-        .eq("from_friend", settlement.from)
-        .eq("to_friend", settlement.to)
-        .eq("paid", false)
+        .eq("id", settlement.id)
+        // .eq("from_friend", settlement.from)
+        // .eq("to_friend", settlement.to)
+        // .eq("paid", false)
         .single();
 
       if (findError) throw findError;

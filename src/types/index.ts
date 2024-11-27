@@ -16,6 +16,7 @@ export interface Expense {
 }
 
 export interface Settlement {
+  id: number;
   from: string;
   to: string;
   amount: number;

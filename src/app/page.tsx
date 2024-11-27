@@ -228,7 +228,7 @@ const ExpenseSplitter = () => {
       label: 'Settlements',
       content: (
         <div className="space-y-4">
-          <div className="flex gap-4">
+          <div className="md:flex gap-4">
           <Select 
             value={selectedExpenseId}
             onValueChange={(value) => setSelectedExpenseId(value as string)}

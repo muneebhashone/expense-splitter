@@ -154,29 +154,29 @@ export function Settlements({
                       {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
                     </span>
 
-                    <div className="flex items-center gap-3 pt-2">
+                    <div className="md:flex items-center gap-3 pt-2">
                       <input
                         type="number"
                         inputMode="decimal"
                         placeholder="Partial amount"
-                        className="flex-1 px-3 py-2 border rounded-md text-sm focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300"
-                          min="0"
-                          max={settlement.amount}
-                          step="0.01"
-                          onChange={(e) => {
-                            const input = e.target.value;
-                            const element = e.target;
-                            const value = parseFloat(input);
-                            if (value > settlement.amount!) {
-                              element.setCustomValidity(
-                                `Cannot exceed ${settlement.amount}`
-                              );
-                            } else {
-                              element.setCustomValidity("");
-                            }
-                          }}
-                        />
-                        <div className="flex items-center gap-2">
+                        className="flex-1 px-3 py-2 w-full border rounded-md text-sm focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300"
+                        min="0"
+                        max={settlement.amount}
+                        step="0.01"
+                        onChange={(e) => {
+                          const input = e.target.value;
+                          const element = e.target;
+                          const value = parseFloat(input);
+                          if (value > settlement.amount!) {
+                            element.setCustomValidity(
+                              `Cannot exceed ${settlement.amount}`
+                            );
+                          } else {
+                            element.setCustomValidity("");
+                          }
+                        }}
+                      />
+                      <div className="md:flex items-center gap-2">
                         <button
                           onClick={(e) => {
                             const input = (
@@ -230,7 +230,6 @@ export function Settlements({
                           <CheckCircle className="h-4 w-4" />
                           Settle Full
                         </button>
-                        </div>
                       </div>
                     </div>
                   </div>
