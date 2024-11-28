@@ -25,6 +25,7 @@ interface ExpensesListProps {
 
 export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesListProps) {
   const [selectedExpenses, setSelectedExpenses] = useState<number[]>([]);
+
   if (loading) {
     return (
       <LoadingCard
@@ -37,13 +38,12 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
     );
   }
 
-
   return (
     <Card className="border-t-4 border-t-purple-500">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-xl">
               <Receipt className="h-5 w-5 text-purple-500" />
               Expenses
             </CardTitle>
@@ -54,7 +54,7 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
-                    className="text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
+                    className="h-10 px-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center gap-2 text-sm font-medium"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete ({selectedExpenses.length})
@@ -82,7 +82,7 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+            <span className="bg-purple-100 text-purple-800 px-3 py-1.5 rounded-lg text-sm font-medium">
               {expenses.length} expenses
             </span>
           </div>
@@ -92,55 +92,59 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
         {expenses.length === 0 ? (
           <div className="text-center py-8">
             <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-sm font-medium text-gray-900">No expenses yet</h3>
-            <p className="text-sm text-gray-500 mt-1">Add your first expense to get started!</p>
+            <h3 className="text-base font-medium text-gray-900">No expenses yet</h3>
+            <p className="text-sm text-gray-500 mt-2">Add your first expense to get started!</p>
           </div>
         ) : (
           <div className="space-y-4">
             {expenses.map((expense, index) => (
-              <div key={index} className="bg-white p-4 rounded-lg border hover:border-purple-200 transition-colors group relative">
-                <div className="absolute left-4 top-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedExpenses.includes(index)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedExpenses([...selectedExpenses, index]);
-                      } else {
-                        setSelectedExpenses(selectedExpenses.filter(i => i !== index));
-                      }
-                    }}
-                    className="h-4 w-4 text-purple-500 rounded border-gray-300 focus:ring-purple-500"
-                  />
-                </div>
-                <div className="flex justify-between items-start pl-8">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-medium text-gray-900">{expense.description}</h3>
-                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+              <div 
+                key={index} 
+                className="bg-white p-4 rounded-lg border hover:border-purple-200 transition-colors relative"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedExpenses.includes(index)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedExpenses([...selectedExpenses, index]);
+                        } else {
+                          setSelectedExpenses(selectedExpenses.filter(i => i !== index));
+                        }
+                      }}
+                      className="h-5 w-5 text-purple-500 rounded border-gray-300 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                      <h3 className="text-base font-medium text-gray-900 truncate">{expense.description}</h3>
+                      <span className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-lg inline-flex items-center self-start">
                         {format(new Date(expense?.date || ''), 'MMM d, yyyy')}
                       </span>
                     </div>
                     
-                    <div className="mt-2 flex items-center gap-4">
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <DollarSign className="h-4 w-4" />
-                        <span>Total: {expense.amount?.toFixed(2)}</span>
+                    <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <span>Total: ${expense.amount?.toFixed(2)}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Users className="h-4 w-4" />
-                        <span>Split: {expense.split_amount?.toFixed(2)} each</span>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span>Split: ${expense.split_amount?.toFixed(2)} each</span>
                       </div>
                     </div>
 
-                    <div className="mt-2">
-                      <div className="flex flex-wrap gap-2">
-                        {expense?.expense_payers?.map((payer, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {payer.payer}: ${JSON.stringify(payer.amount)}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-2">
+                      {expense?.expense_payers?.map((payer, index) => (
+                        <span 
+                          key={index} 
+                          className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800"
+                        >
+                          {payer.payer}: ${payer.amount.toFixed(2)}
+                        </span>
+                      ))}
                     </div>
                   </div>
                   
@@ -148,7 +152,7 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <button
-                          className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete expense"
                         >
                           <Trash2 className="h-5 w-5" />
