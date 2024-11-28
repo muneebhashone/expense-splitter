@@ -27,7 +27,7 @@ interface ValidationErrors {
 type SplitType = 'equal' | 'percentage' | 'custom';
 
 interface LockedState {
-  [key: string]: boolean;
+  [key: string]: 'none' | 'nonpayer' | 'payer';
 }
 
 export function NewExpense({
@@ -50,14 +50,17 @@ export function NewExpense({
 
   const calculateRemainingAmount = () => {
     const total = parseFloat(totalAmount) || 0;
-    // Don't consider locked amounts in remaining calculation
-    return total;
+    // Consider payer-locked amounts in calculation
+    const payerLockedAmount = Object.entries(payers)
+      .filter(([friend]) => lockedInputs[friend] === 'payer')
+      .reduce((sum, [, amount]) => sum + (parseFloat(amount) || 0), 0);
+    return total - payerLockedAmount;
   };
 
   const distributeRemainingAmount = () => {
     const remainingAmount = calculateRemainingAmount();
     const unlockedPayers = Array.from(participants).filter(
-      friend => !lockedInputs[friend]
+      friend => lockedInputs[friend] === 'none' || !lockedInputs[friend]
     );
 
     if (unlockedPayers.length > 0) {
@@ -70,16 +73,25 @@ export function NewExpense({
 
   const toggleLock = (friend: string) => {
     const newLockedInputs = { ...lockedInputs };
-    newLockedInputs[friend] = !newLockedInputs[friend];
-    setLockedInputs(newLockedInputs);
-
-    if (newLockedInputs[friend]) {
-      // If locking, set amount to 0
-      onPayerAmountChange(friend, '0');
-    } else {
-      // If unlocking, include in the redistribution
-      distributeRemainingAmount();
+    const currentState = newLockedInputs[friend] || 'none';
+    
+    // Cycle through lock states: none -> nonpayer -> payer -> none
+    switch (currentState) {
+      case 'none':
+        newLockedInputs[friend] = 'nonpayer';
+        onPayerAmountChange(friend, '0'); // Set to 0 for non-payer
+        break;
+      case 'nonpayer':
+        newLockedInputs[friend] = 'payer';
+        // Keep current amount for payer lock
+        break;
+      case 'payer':
+        newLockedInputs[friend] = 'none';
+        distributeRemainingAmount(); // Redistribute when unlocking
+        break;
     }
+    
+    setLockedInputs(newLockedInputs);
   };
 
   const validateForm = (): boolean => {
@@ -338,17 +350,32 @@ export function NewExpense({
                         }`}
                         disabled={disabled || !participants.has(friend)}
                       >
-                        {lockedInputs[friend] ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                          </svg>
-                        )}
+                        {(() => {
+                          switch (lockedInputs[friend]) {
+                            case 'nonpayer':
+                              return (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                              );
+                            case 'payer':
+                              return (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                  <circle cx="12" cy="16" r="1" fill="currentColor"></circle>
+                                </svg>
+                              );
+                            default:
+                              return (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                  <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                </svg>
+                              );
+                          }
+                        })()}
                       </button>
                       <span className="text-sm font-medium">{friend}</span>
                     </div>
@@ -396,7 +423,7 @@ export function NewExpense({
                           placeholder="0.00"
                           step="0.01"
                           min="0"
-                          disabled={disabled || !participants.has(friend) || lockedInputs[friend]}
+                          disabled={disabled || !participants.has(friend) || lockedInputs[friend] === 'nonpayer'}
                         />
                       </div>
                     )}
