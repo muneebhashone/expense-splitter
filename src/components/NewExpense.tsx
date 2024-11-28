@@ -53,7 +53,7 @@ export function NewExpense({
     // Consider payer-locked amounts in calculation
     const payerLockedAmount = Object.entries(payers)
       .filter(([friend]) => lockedInputs[friend] === 'payer')
-      .reduce((sum, [, amount]) => sum + (parseFloat(amount) || 0), 0);
+      .reduce((sum, [, amount]) => sum + (amount || 0), 0);
     return total - payerLockedAmount;
   };
 
@@ -391,7 +391,7 @@ export function NewExpense({
                             step="0.01"
                             min="0"
                             max="100"
-                            disabled={disabled || !participants.has(friend) || lockedInputs[friend]}
+                            disabled={disabled || !participants.has(friend) || Boolean(lockedInputs[friend])}
                           />
                           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                             <span className="text-gray-400">%</span>
