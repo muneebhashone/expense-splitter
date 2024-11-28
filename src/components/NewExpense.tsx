@@ -73,9 +73,11 @@ export function NewExpense({
     newLockedInputs[friend] = !newLockedInputs[friend];
     setLockedInputs(newLockedInputs);
 
-    // If locking, preserve the current amount
-    // If unlocking, include in the redistribution
-    if (!newLockedInputs[friend]) {
+    if (newLockedInputs[friend]) {
+      // If locking, set amount to 0
+      onPayerAmountChange(friend, '0');
+    } else {
+      // If unlocking, include in the redistribution
       distributeRemainingAmount();
     }
   };
