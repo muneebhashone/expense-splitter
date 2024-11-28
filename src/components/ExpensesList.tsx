@@ -1,5 +1,5 @@
 'use client';
-import { Receipt, Trash2, Users, DollarSign } from 'lucide-react';
+import { Receipt, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -13,9 +13,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { LoadingCard } from './ui/loading-card';
-import { format } from 'date-fns';
 import { Expense } from '@/hooks/useSupabaseData';
 import { useState } from 'react';
+import { ExpenseItem } from './ExpenseItem';
 
 interface ExpensesListProps {
   expenses: Expense[];
@@ -98,87 +98,21 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
         ) : (
           <div className="space-y-4">
             {expenses.map((expense, index) => (
-              <div 
-                key={index} 
-                className="bg-white p-4 rounded-lg border hover:border-purple-200 transition-colors relative"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="pt-1">
-                    <input
-                      type="checkbox"
-                      checked={selectedExpenses.includes(index)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedExpenses([...selectedExpenses, index]);
-                        } else {
-                          setSelectedExpenses(selectedExpenses.filter(i => i !== index));
-                        }
-                      }}
-                      className="h-5 w-5 text-purple-500 rounded border-gray-300 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                      <h3 className="text-base font-medium text-gray-900 truncate">{expense.description}</h3>
-                      <span className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-lg inline-flex items-center self-start">
-                        {format(new Date(expense?.date || ''), 'MMM d, yyyy')}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-3 mb-3">
-                      <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                        <DollarSign className="h-4 w-4 text-gray-400" />
-                        <span>Total: ${expense.amount?.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <span>Split: ${expense.split_amount?.toFixed(2)} each</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {expense?.expense_payers?.map((payer, index) => (
-                        <span 
-                          key={index} 
-                          className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800"
-                        >
-                          {payer.payer}: ${payer.amount.toFixed(2)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {!selectedExpenses.length && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete expense"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Expense</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this expense? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => onDeleteExpense([index])}
-                            className="bg-red-500 hover:bg-red-600"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </div>
+              <ExpenseItem
+                key={index}
+                expense={expense}
+                index={index}
+                onDeleteExpense={onDeleteExpense}
+                selected={selectedExpenses.includes(index)}
+                onSelectChange={(checked) => {
+                  if (checked) {
+                    setSelectedExpenses([...selectedExpenses, index]);
+                  } else {
+                    setSelectedExpenses(selectedExpenses.filter(i => i !== index));
+                  }
+                }}
+                showDeleteButton={!selectedExpenses.length}
+              />
             ))}
           </div>
         )}
