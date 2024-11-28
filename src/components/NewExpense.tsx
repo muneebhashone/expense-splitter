@@ -26,6 +26,10 @@ interface ValidationErrors {
 
 type SplitType = 'equal' | 'percentage' | 'custom';
 
+interface LockedState {
+  [key: string]: boolean;
+}
+
 export function NewExpense({
   friends,
   totalAmount,
@@ -42,6 +46,41 @@ export function NewExpense({
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [splitType, setSplitType] = useState<SplitType>('equal');
   const [percentages, setPercentages] = useState<{ [key: string]: string }>({});
+  const [lockedInputs, setLockedInputs] = useState<LockedState>({});
+
+  const calculateRemainingAmount = () => {
+    const total = parseFloat(totalAmount) || 0;
+    const lockedAmount = Object.entries(payers)
+      .filter(([friend]) => lockedInputs[friend])
+      .reduce((sum, [_, amount]) => sum + (parseFloat(amount) || 0), 0);
+    return total - lockedAmount;
+  };
+
+  const distributeRemainingAmount = () => {
+    const remainingAmount = calculateRemainingAmount();
+    const unlockedPayers = Array.from(participants).filter(
+      friend => !lockedInputs[friend]
+    );
+
+    if (unlockedPayers.length > 0) {
+      const amountPerPayer = (remainingAmount / unlockedPayers.length).toFixed(2);
+      unlockedPayers.forEach(friend => {
+        onPayerAmountChange(friend, amountPerPayer);
+      });
+    }
+  };
+
+  const toggleLock = (friend: string) => {
+    const newLockedInputs = { ...lockedInputs };
+    newLockedInputs[friend] = !newLockedInputs[friend];
+    setLockedInputs(newLockedInputs);
+
+    // If locking, preserve the current amount
+    // If unlocking, include in the redistribution
+    if (!newLockedInputs[friend]) {
+      distributeRemainingAmount();
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -276,7 +315,31 @@ export function NewExpense({
                   className={`transition-opacity ${participants.has(friend) ? 'opacity-100' : 'opacity-50'}`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <span className="text-sm font-medium w-full sm:w-24">{friend}</span>
+                    <div className="flex items-center gap-2 w-full sm:w-32">
+                      <button
+                        type="button"
+                        onClick={() => toggleLock(friend)}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          lockedInputs[friend]
+                            ? 'bg-gray-200 text-gray-700'
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
+                        disabled={disabled || !participants.has(friend)}
+                      >
+                        {lockedInputs[friend] ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                          </svg>
+                        )}
+                      </button>
+                      <span className="text-sm font-medium">{friend}</span>
+                    </div>
                     {splitType === 'custom' ? (
                       <div className="flex items-center gap-2 flex-1">
                         <div className="relative flex-1">
@@ -289,7 +352,7 @@ export function NewExpense({
                             step="0.01"
                             min="0"
                             max="100"
-                            disabled={disabled || !participants.has(friend)}
+                            disabled={disabled || !participants.has(friend) || lockedInputs[friend]}
                           />
                           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                             <span className="text-gray-400">%</span>
@@ -321,7 +384,7 @@ export function NewExpense({
                           placeholder="0.00"
                           step="0.01"
                           min="0"
-                          disabled={disabled || !participants.has(friend)}
+                          disabled={disabled || !participants.has(friend) || lockedInputs[friend]}
                         />
                       </div>
                     )}
