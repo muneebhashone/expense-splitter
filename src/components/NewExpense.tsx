@@ -344,11 +344,20 @@ export function NewExpense({
                         type="button"
                         onClick={() => toggleLock(friend)}
                         className={`p-1.5 rounded-lg transition-colors ${
-                          lockedInputs[friend]
-                            ? 'bg-gray-200 text-gray-700'
+                          lockedInputs[friend] === 'nonpayer'
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                            : lockedInputs[friend] === 'payer'
+                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                             : 'bg-green-100 text-green-700 hover:bg-green-200'
                         }`}
                         disabled={disabled || !participants.has(friend)}
+                        title={
+                          lockedInputs[friend] === 'nonpayer'
+                            ? 'Non-payer lock: Amount set to 0 and excluded from calculations'
+                            : lockedInputs[friend] === 'payer'
+                            ? 'Payer lock: Amount preserved and included in calculations'
+                            : 'Click to cycle through lock states'
+                        }
                       >
                         {(() => {
                           switch (lockedInputs[friend]) {
