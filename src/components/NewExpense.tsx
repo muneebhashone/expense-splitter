@@ -52,7 +52,7 @@ export function NewExpense({
     const total = parseFloat(totalAmount) || 0;
     const lockedAmount = Object.entries(payers)
       .filter(([friend]) => lockedInputs[friend])
-      .reduce((sum, [_, amount]) => sum + (parseFloat(amount) || 0), 0);
+      .reduce((sum, [, amount]) => sum + (amount || 0), 0);
     return total - lockedAmount;
   };
 
