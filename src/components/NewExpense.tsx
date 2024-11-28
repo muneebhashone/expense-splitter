@@ -306,6 +306,18 @@ export function NewExpense({
                   <Percent className="h-4 w-4" />
                   Custom Split
                 </button>
+                <button
+                  type="button"
+                  onClick={distributeRemainingAmount}
+                  className="flex-1 sm:flex-none h-10 px-4 rounded-lg text-sm font-medium transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center justify-center gap-1"
+                  disabled={disabled || !totalAmount || participants.size === 0}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                  </svg>
+                  Recalculate
+                </button>
               </div>
             </div>
             <div className="space-y-3">
