@@ -50,10 +50,8 @@ export function NewExpense({
 
   const calculateRemainingAmount = () => {
     const total = parseFloat(totalAmount) || 0;
-    const lockedAmount = Object.entries(payers)
-      .filter(([friend]) => lockedInputs[friend])
-      .reduce((sum, [, amount]) => sum + (amount || 0), 0);
-    return total - lockedAmount;
+    // Don't consider locked amounts in remaining calculation
+    return total;
   };
 
   const distributeRemainingAmount = () => {
@@ -278,9 +276,9 @@ export function NewExpense({
           </div>
 
           <div>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+            <div className="flex flex-col gap-3 mb-4">
               <label className="block text-sm font-medium text-gray-700">Amount Paid by Each</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={handleSplitEqually}
@@ -326,8 +324,8 @@ export function NewExpense({
                   key={friend}
                   className={`transition-opacity ${participants.has(friend) ? 'opacity-100' : 'opacity-50'}`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex items-center gap-2 w-full sm:w-32">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-center gap-2 w-full sm:w-40">
                       <button
                         type="button"
                         onClick={() => toggleLock(friend)}
@@ -353,7 +351,7 @@ export function NewExpense({
                       <span className="text-sm font-medium">{friend}</span>
                     </div>
                     {splitType === 'custom' ? (
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1">
                         <div className="relative flex-1">
                           <input
                             type="number"
