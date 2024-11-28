@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { LoadingCard } from "./ui/loading-card";
 import { Settlement as SettlementType } from "@/hooks/useSupabaseData";
-import { formatDistanceToNow } from "date-fns";
 import { Expense, Settlement } from "@/types";
 import { useMemo, useState } from "react";
 
@@ -138,6 +137,8 @@ export function Settlements({
                     amount: settlement.amount!,
                     expense_id: settlement.expense_id,
                     date: settlement.date,
+                    remaining: 0,
+                    paid: settlement.paid,
                   }}
                   expenseDescription={expenseIdToExpenseMapper[settlement.expense_id]?.description}
                   onSettlementPaid={onSettlementPaid}
@@ -171,6 +172,8 @@ export function Settlements({
                     amount: settlement.amount!,
                     expense_id: settlement.expense_id,
                     date: settlement.date,
+                    remaining: 0,
+                    paid: settlement.paid,
                   }}
                   expenseDescription={expenseIdToExpenseMapper[settlement.expense_id]?.description}
                   onSettlementPaid={onSettlementPaid}

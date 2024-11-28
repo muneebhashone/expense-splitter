@@ -1,15 +1,4 @@
 'use client';
-import { Receipt, Trash2, Users, DollarSign } from 'lucide-react';
-import { format } from 'date-fns';
-import { Expense } from '@/hooks/useSupabaseData';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +10,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Expense } from '@/hooks/useSupabaseData';
+import { format } from 'date-fns';
+import { DollarSign, Trash2, Users } from 'lucide-react';
 
 interface ExpenseItemProps {
   expense: Expense;

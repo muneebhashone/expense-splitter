@@ -43,18 +43,25 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <Receipt className="h-5 w-5 text-purple-500" />
               Expenses
             </CardTitle>
             <CardDescription>Review all shared expenses</CardDescription>
           </div>
           <div className="flex items-center gap-3">
-            {selectedExpenses.length > 0 && (
+           
+            <span className="bg-purple-100 text-purple-800 px-3 py-1.5 rounded-lg text-sm font-medium">
+              {expenses.length}
+            </span>
+          </div>
+        </div>
+        <div className=''>
+        {selectedExpenses.length > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
-                    className="h-10 px-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center gap-2 text-sm font-medium"
+                    className="h-10 px-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center gap-2 text-sm font-medium justify-center w-full"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete ({selectedExpenses.length})
@@ -82,10 +89,6 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <span className="bg-purple-100 text-purple-800 px-3 py-1.5 rounded-lg text-sm font-medium">
-              {expenses.length} expenses
-            </span>
-          </div>
         </div>
       </CardHeader>
       <CardContent>

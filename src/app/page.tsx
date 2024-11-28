@@ -7,10 +7,11 @@ import { NewExpense } from '@/components/NewExpense';
 import { ExpensesList } from '@/components/ExpensesList';
 import { Settlements } from '@/components/Settlements';
 import { Header } from '@/components/Header';
-import { TabNavigation } from '@/components/TabNavigation';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { Expense as ExpenseType } from '@/hooks/useSupabaseData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, PlusCircle, Receipt, Wallet } from 'lucide-react';
 
 const ExpenseSplitter = () => {
   const {
@@ -62,13 +63,11 @@ const ExpenseSplitter = () => {
       const amount = parseFloat(totalAmount);
       const splitAmount = amount / participants.size;
 
-      // Convert payers object to expense_payers array
       const expense_payers = Object.entries(payers).map(([payer, amount]) => ({
         payer,
         amount: parseFloat(amount.toString())
       })) as ExpenseType['expense_payers'];
 
-      // Convert participants set to expense_participants array
       const expense_participants = Array.from(participants).map(participant => ({
         participant
       })) as ExpenseType['expense_participants'];
@@ -84,7 +83,6 @@ const ExpenseSplitter = () => {
 
       addExpense(newExpense);
       
-      // Reset form
       setDescription('');
       setTotalAmount('');
       setPayers({});
@@ -99,7 +97,6 @@ const ExpenseSplitter = () => {
   const [selectedToFriend, setSelectedToFriend] = useState<string>('');
 
   const handleDeleteExpense = (indices: number[]) => {
-    // Convert indices to expense IDs
     const ids = indices.map(index => expenses[index]?.id).filter((id): id is string => !!id);
     setExpensesToDelete(ids);
     setDialogOpen(true);
@@ -156,22 +153,11 @@ const ExpenseSplitter = () => {
     return updatedSettlements;
   }, [settlements, selectedExpenseId, selectedFromFriend, selectedToFriend]);
 
-
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto p-4">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error! </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      </div>
-    );
-  }
-
   const tabs = [
     {
       id: 'friends',
       label: 'Friends',
+      icon: <Users className="w-6 h-6" />,
       content: (
         <FriendsList
           friends={friends}
@@ -185,7 +171,8 @@ const ExpenseSplitter = () => {
     },
     {
       id: 'new-expense',
-      label: 'Add Expense',
+      label: 'Add',
+      icon: <PlusCircle className="w-6 h-6" />,
       content: (
         <NewExpense
           friends={friends}
@@ -215,6 +202,7 @@ const ExpenseSplitter = () => {
     {
       id: 'expenses',
       label: 'Expenses',
+      icon: <Receipt className="w-6 h-6" />,
       content: (
         <ExpensesList
           expenses={expenses}
@@ -225,80 +213,91 @@ const ExpenseSplitter = () => {
     },
     {
       id: 'settlements',
-      label: 'Settlements',
+      label: 'Settle',
+      icon: <Wallet className="w-6 h-6" />,
       content: (
         <div className="space-y-4">
-          <div className="md:flex gap-4">
-          <Select 
-            value={selectedExpenseId}
-            onValueChange={(value) => setSelectedExpenseId(value as string)}
-          >
-            <SelectTrigger> 
-              <SelectValue placeholder="Select an expense" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Expenses</SelectItem>
-              {expenses.map((expense) => (
-              <SelectItem key={expense.id} value={expense.id!}>
-                {expense.description} (${expense.amount})
-              </SelectItem>
-            ))}
-          </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 gap-3">
+            <Select 
+              value={selectedExpenseId}
+              onValueChange={(value) => setSelectedExpenseId(value as string)}
+            >
+              <SelectTrigger> 
+                <SelectValue placeholder="Select an expense" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Expenses</SelectItem>
+                {expenses.map((expense) => (
+                <SelectItem key={expense.id} value={expense.id!}>
+                  {expense.description} (${expense.amount})
+                </SelectItem>
+              ))}
+              </SelectContent>
+            </Select>
 
-          <Select 
-            value={selectedFromFriend}
-            onValueChange={(value) => setSelectedFromFriend(value as string)}
-          >
-            <SelectTrigger> 
-              <SelectValue placeholder="Select a from friend" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Friends</SelectItem>
-              {friends.map((friend) => (
-              <SelectItem key={friend} value={friend}>
-                {friend}
-              </SelectItem>
-            ))}
-          </SelectContent>
-          </Select>
+            <Select 
+              value={selectedFromFriend}
+              onValueChange={(value) => setSelectedFromFriend(value as string)}
+            >
+              <SelectTrigger> 
+                <SelectValue placeholder="From friend" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Friends</SelectItem>
+                {friends.map((friend) => (
+                <SelectItem key={friend} value={friend}>
+                  {friend}
+                </SelectItem>
+              ))}
+              </SelectContent>
+            </Select>
 
-          <Select 
-            value={selectedToFriend}
-            onValueChange={(value) => setSelectedToFriend(value as string)}
-          >
-            <SelectTrigger> 
-                <SelectValue placeholder="Select a to friend" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Friends</SelectItem>
-              {friends.map((friend) => (
-              <SelectItem key={friend} value={friend}>
-                {friend}
-              </SelectItem>
-            ))}
-          </SelectContent>
-          </Select>
-          
-          
+            <Select 
+              value={selectedToFriend}
+              onValueChange={(value) => setSelectedToFriend(value as string)}
+            >
+              <SelectTrigger> 
+                <SelectValue placeholder="To friend" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Friends</SelectItem>
+                {friends.map((friend) => (
+                <SelectItem key={friend} value={friend}>
+                  {friend}
+                </SelectItem>
+              ))}
+              </SelectContent>
+            </Select>
           </div>
+          
           <Settlements
-          expenses={expenses as unknown as Expense[]}
-          settlements={filteredSettlements}
-          onSettlementPaid={handleSettlementUpdate}
-          onClearSettlements={() => {
-            setDialogOpen(true);
-            setSettlementsToClear(true);
-          }}
-          loading={loadingSettlements}
-        />
+            expenses={expenses as unknown as Expense[]}
+            settlements={filteredSettlements}
+            onSettlementPaid={handleSettlementUpdate}
+            onClearSettlements={() => {
+              setDialogOpen(true);
+              setSettlementsToClear(true);
+            }}
+            loading={loadingSettlements}
+          />
         </div>
       )
     }
   ];
 
+  if (error) {
+    return (
+      <div className="max-w-md mx-auto p-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error! </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto p-4 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -339,17 +338,17 @@ const ExpenseSplitter = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Header 
-        onExportData={() => console.log('Export data')} 
-        onImportData={() => console.log('Import data')} 
-        activeTab={activeTab}
-      />
-      
-      <TabNavigation
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+
+      <div className="max-w-md mx-auto">
+        <Header activeTab={activeTab} onExportData={() => {}} onImportData={() => {}} />
+        <div className="px-4">
+          <BottomNavigation
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </div>
+      </div>
     </div>
   );
 };

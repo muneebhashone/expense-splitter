@@ -31,7 +31,7 @@ export default async function RootLayout({
         <Providers initialSession={session}>
           <div className="min-h-screen bg-gray-50">
             <NavBar user={session?.user || null} />
-            <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+            <main className="mx-auto max-w-7xl py-6">
               {children}
             </main>
           </div>

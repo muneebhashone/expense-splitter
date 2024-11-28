@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Payers } from '@/types';
-import { DollarSign, Percent, Receipt, Users } from 'lucide-react';
+import { DollarSign, Receipt, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface NewExpenseProps {
@@ -292,11 +292,11 @@ export function NewExpense({
           <div>
             <div className="flex flex-col gap-3 mb-4">
               <label className="block text-sm font-medium text-gray-700">Amount Paid by Each</label>
-              <div className="flex flex-wrap gap-2">
-                <button
+              <div className=" w-full flex flex-col flex-wrap gap-2">
+                {/* <button
                   type="button"
                   onClick={handleSplitEqually}
-                  className={`flex-1 sm:flex-none h-10 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 sm:flex-none py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                     splitType === 'equal'
                       ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
@@ -305,23 +305,11 @@ export function NewExpense({
                 >
                   Split Equally
                 </button>
-                <button
-                  type="button"
-                  onClick={handleCustomSplit}
-                  className={`flex-1 sm:flex-none h-10 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-                    splitType === 'custom'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                  }`}
-                  disabled={disabled || !totalAmount || participants.size === 0}
-                >
-                  <Percent className="h-4 w-4" />
-                  Custom Split
-                </button>
+                */}
                 <button
                   type="button"
                   onClick={distributeRemainingAmount}
-                  className="flex-1 sm:flex-none h-10 px-4 rounded-lg text-sm font-medium transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center justify-center gap-1"
+                  className="flex-1 sm:flex-none py-2 px-4 rounded-lg text-sm font-medium transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center justify-center gap-1"
                   disabled={disabled || !totalAmount || participants.size === 0}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

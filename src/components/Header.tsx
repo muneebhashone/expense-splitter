@@ -25,12 +25,14 @@ export function Header({ activeTab }: HeaderProps) {
   }[activeTab as TabThemeKey] || 'text-blue-600';
 
   return (
-    <div className={`text-center py-8 bg-gradient-to-b ${gradientClass} transition-all duration-500`}>
-      <h1 className="text-4xl font-bold text-foreground flex items-center justify-center gap-3 mb-3">
-        <HandCoins className={`h-10 w-10 ${accentColor} animate-bounce transition-colors duration-500`} />
-        Expense Splitter
-      </h1>
-      <p className="text-muted-foreground text-lg">Split expenses easily with friends</p>
+    <div className={`text-center py-6 bg-gradient-to-b ${gradientClass} transition-all duration-500`}>
+      <div className="flex items-center justify-center gap-3 mb-2">
+        <HandCoins className={`h-8 w-8 ${accentColor} animate-bounce transition-colors duration-500`} />
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+          Expense Splitter
+        </h1>
+      </div>
+      <p className="text-muted-foreground text-sm sm:text-base">Split expenses easily with friends</p>
     </div>
   );
 }
