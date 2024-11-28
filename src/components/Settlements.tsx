@@ -54,7 +54,6 @@ export function Settlements({
     const unpaidSettlements = settlements.filter((s) => !s.paid);
     const settlementMap = new Map<string, number>();
 
-    // Calculate net amounts between friends
     unpaidSettlements.forEach((settlement) => {
       const key = [settlement.from_friend, settlement.to_friend].sort().join('-');
       const amount = settlement.amount || 0;
@@ -68,7 +67,6 @@ export function Settlements({
       }
     });
 
-    // Convert to final settlements
     const result: NetSettlement[] = [];
     settlementMap.forEach((amount, key) => {
       if (amount !== 0) {
@@ -104,7 +102,7 @@ export function Settlements({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-xl">
               <CheckCircle className="h-5 w-5 text-yellow-500" />
               Settlements
             </CardTitle>
@@ -120,10 +118,10 @@ export function Settlements({
           {unpaidSettlements.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-900">Pending Settlements</h3>
+                <h3 className="text-base font-medium text-gray-900">Pending Settlements</h3>
                 <button
                   onClick={() => setIsEasyViewOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 transition-colors rounded-md hover:bg-blue-50"
+                  className="h-10 px-4 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex items-center gap-2 text-sm font-medium"
                 >
                   <Eye className="h-4 w-4" />
                   Easy View
@@ -150,38 +148,40 @@ export function Settlements({
                       </span>
                     </div>
                     
-                    <span className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-green-800 bg-green-100 rounded-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                    <span className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-800 bg-green-100 rounded-lg max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
                       {expenseIdToExpenseMapper[settlement.expense_id]?.description} - {settlement.date ? new Date(settlement.date).toDateString() : ""}
                     </span>
 
-                    <div className="md:flex items-center gap-3 pt-2">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="Partial amount"
-                        className="flex-1 px-3 py-2 w-full border rounded-md text-sm focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300"
-                        min="0"
-                        max={settlement.amount}
-                        step="0.01"
-                        onChange={(e) => {
-                          const input = e.target.value;
-                          const element = e.target;
-                          const value = parseFloat(input);
-                          if (value > settlement.amount!) {
-                            element.setCustomValidity(
-                              `Cannot exceed ${settlement.amount}`
-                            );
-                          } else {
-                            element.setCustomValidity("");
-                          }
-                        }}
-                      />
-                      <div className="md:flex items-center gap-2">
+                    <div className="flex flex-col gap-3">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          placeholder="Enter partial amount"
+                          className="w-full h-12 px-4 border rounded-lg text-base focus:border-yellow-300 focus:ring-1 focus:ring-yellow-300"
+                          min="0"
+                          max={settlement.amount}
+                          step="0.01"
+                          onChange={(e) => {
+                            const input = e.target.value;
+                            const element = e.target;
+                            const value = parseFloat(input);
+                            if (value > settlement.amount!) {
+                              element.setCustomValidity(
+                                `Cannot exceed ${settlement.amount}`
+                              );
+                            } else {
+                              element.setCustomValidity("");
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
                         <button
                           onClick={(e) => {
                             const input = (
                               e.target as HTMLElement
-                            ).closest('.flex')?.querySelector(
+                            ).closest('.flex-col')?.querySelector(
                               "input"
                             ) as HTMLInputElement;
                             const partialAmount = parseFloat(input.value);
@@ -194,7 +194,6 @@ export function Settlements({
                               return;
                             }
 
-                            // Handle partial settlement
                             onSettlementPaid({
                               id: Number(settlement.id),
                               from: settlement.from_friend!,
@@ -208,7 +207,7 @@ export function Settlements({
 
                             input.value = "";
                           }}
-                          className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-md hover:bg-green-700 active:bg-green-800 transition-colors flex-shrink-0"
+                          className="h-12 text-base font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors"
                         >
                           Settle Partial
                         </button>
@@ -225,7 +224,7 @@ export function Settlements({
                               expense_id: settlement.expense_id,
                             })
                           }
-                          className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-md transition-colors flex-shrink-0 flex items-center gap-2"
+                          className="h-12 text-base font-medium text-green-600 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                           <CheckCircle className="h-4 w-4" />
                           Settle Full
@@ -242,15 +241,15 @@ export function Settlements({
           {paidSettlements.length > 0 && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="font-medium text-gray-900">
+                <h3 className="text-base font-medium text-gray-900">
                   Completed Settlements
                 </h3>
                 <button
                   onClick={onClearSettlements}
-                  className="flex items-center gap-2 px-3 py-1 text-sm text-red-600 hover:text-red-700 transition-colors"
+                  className="h-10 px-4 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center gap-2 text-sm font-medium"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Clear Completed
+                  Clear All
                 </button>
               </div>
               {paidSettlements.map((settlement, index) => (
@@ -272,13 +271,13 @@ export function Settlements({
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-red-800 bg-red-100 rounded-full">
+                      <span className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-800 bg-red-100 rounded-lg">
                         {expenseIdToExpenseMapper[settlement.expense_id]?.description}
                       </span>
                       <span className="text-sm text-gray-500">
                         {settlement.date ? new Date(settlement.date).toDateString() : ""}
                       </span>
-                      <span className="text-sm text-gray-400 ml-auto">
+                      <span className="text-sm text-gray-400 mt-1 sm:mt-0 sm:ml-auto">
                         {settlement.date
                           ? formatDistanceToNow(new Date(settlement.date), {
                               addSuffix: true,
@@ -302,7 +301,7 @@ export function Settlements({
             </DialogHeader>
             <div className="space-y-3">
               {netSettlements.length === 0 ? (
-                <p className="text-gray-500 text-center">No pending settlements</p>
+                <p className="text-gray-500 text-center py-4">No pending settlements</p>
               ) : (
                 netSettlements.map((settlement, index) => (
                   <div
@@ -323,7 +322,6 @@ export function Settlements({
                     </div>
                     <button
                       onClick={() => {
-                        // Find all unpaid settlements between these two friends
                         const relevantSettlements = unpaidSettlements.filter(
                           (s) =>
                             (s.from_friend === settlement.from &&
@@ -332,7 +330,6 @@ export function Settlements({
                               s.to_friend === settlement.from)
                         );
 
-                        // Mark each settlement as paid
                         relevantSettlements.forEach((s) => {
                           onSettlementPaid({
                             id: Number(s.id),
@@ -346,10 +343,9 @@ export function Settlements({
                           });
                         });
 
-                        // Close the dialog
                         setIsEasyViewOpen(false);
                       }}
-                      className="flex items-center justify-center gap-2 px-4 py-3 text-base font-medium text-white bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-md transition-colors w-full"
+                      className="h-12 flex items-center justify-center gap-2 text-base font-medium text-white bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-lg transition-colors w-full"
                     >
                       <CheckCircle className="h-4 w-4" />
                       Settle All
