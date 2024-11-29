@@ -11,9 +11,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import { LoadingCard } from './ui/loading-card';
-import { Expense } from '@/hooks/useSupabaseData';
+import { Expense } from '@/types';
 import { useState } from 'react';
 import { ExpenseItem } from './ExpenseItem';
 
@@ -50,7 +50,6 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
             <CardDescription>Review all shared expenses</CardDescription>
           </div>
           <div className="flex items-center gap-3">
-           
             <span className="bg-purple-100 text-purple-800 px-3 py-1.5 rounded-lg text-sm font-medium">
               {expenses.length}
             </span>
@@ -102,7 +101,7 @@ export function ExpensesList({ expenses, onDeleteExpense, loading }: ExpensesLis
           <div className="space-y-4">
             {expenses.map((expense, index) => (
               <ExpenseItem
-                key={index}
+                key={expense.id || index}
                 expense={expense}
                 index={index}
                 onDeleteExpense={onDeleteExpense}

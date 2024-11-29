@@ -78,6 +78,7 @@ export interface Database {
           split_amount: number
           date: string
           created_at: string
+          group_id: string
         }
         Insert: {
           id?: string
@@ -87,6 +88,7 @@ export interface Database {
           split_amount: number
           date: string
           created_at?: string
+          group_id: string
         }
         Update: {
           id?: string
@@ -96,6 +98,7 @@ export interface Database {
           split_amount?: number
           date?: string
           created_at?: string
+          group_id?: string
         }
       }
       expense_participants: {

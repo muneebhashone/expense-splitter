@@ -47,6 +47,7 @@ export const useExpenses = () => {
         .from("expenses")
         .insert({
           user_id: user!.id,
+          group_id: expense.group_id || "",
           description: expense.description || "",
           amount: expense.amount,
           split_amount: splitAmount,

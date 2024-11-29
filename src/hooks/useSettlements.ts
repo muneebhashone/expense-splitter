@@ -31,7 +31,7 @@ export const useSettlements = () => {
         .from("settlements")
         .select("id, amount")
         .eq("user_id", user!.id)
-        .eq("id", settlement.id)
+        .eq("id", settlement.id!)
         .single();
 
       if (findError) throw findError;
@@ -56,13 +56,13 @@ export const useSettlements = () => {
             .from("settlements")
             .insert({
               user_id: user!.id,
-              from_friend: settlement.from,
-              to_friend: settlement.to,
+              from_friend: settlement.from_friend,
+              to_friend: settlement.to_friend,
               amount: settlement.amount,
               paid: true,
               date: settlement.date,
-              expense_id: Number(settlement.expense_id),
-              group_id: settlement.group_id,
+              expense_id: Number(settlement.expense_id!),
+              group_id: settlement.group_id!,
             });
 
           if (insertError) throw insertError;

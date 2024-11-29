@@ -1,4 +1,4 @@
-import { Users, PlusCircle, Receipt, Wallet } from 'lucide-react';
+import { Users, PlusCircle, Receipt, Wallet, Users2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Tab {
@@ -19,6 +19,8 @@ export const BottomNavigation = ({ tabs, activeTab, onTabChange }: BottomNavigat
     switch (id) {
       case 'friends':
         return <Users className="w-6 h-6" />;
+      case 'groups':
+        return <Users2 className="w-6 h-6" />;
       case 'new-expense':
         return <PlusCircle className="w-6 h-6" />;
       case 'expenses':
@@ -34,6 +36,8 @@ export const BottomNavigation = ({ tabs, activeTab, onTabChange }: BottomNavigat
     switch (id) {
       case 'friends':
         return 'text-blue-600';
+      case 'groups':
+        return 'text-indigo-600';
       case 'new-expense':
         return 'text-green-600';
       case 'expenses':

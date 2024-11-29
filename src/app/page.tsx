@@ -1,78 +1,85 @@
 "use client";
 import { useMemo, useState } from 'react';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { Expense, Payers, Settlement } from '@/types';
+import { useFriends } from '@/hooks/useFriends';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useSettlements } from '@/hooks/useSettlements';
+import { Settlement, User } from '@/types';
 import { FriendsList } from '@/components/FriendsList';
 import { NewExpense } from '@/components/NewExpense';
 import { ExpensesList } from '@/components/ExpensesList';
 import { Settlements } from '@/components/Settlements';
 import { Header } from '@/components/Header';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { Expense as ExpenseType } from '@/hooks/useSupabaseData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, PlusCircle, Receipt, Wallet } from 'lucide-react';
+import { Users, PlusCircle, Receipt, Wallet, Users2 } from 'lucide-react';
+import { useGroups } from '@/hooks/useGroups';
+import { GroupsList } from '@/components/GroupsList';
 
 const ExpenseSplitter = () => {
   const {
     friends,
+    searchUsers,
+    isSearching,
+    searchResults,
+    isLoading: loadingFriends,
+    error: friendsError
+  } = useFriends();
+
+  const {
     expenses,
-    settlements,
-    loading: { friends: loadingFriends, expenses: loadingExpenses, settlements: loadingSettlements },
-    error,
-    addFriend,
-    deleteFriend,
     addExpense,
     deleteExpense,
+    isLoading: loadingExpenses,
+    error: expensesError
+  } = useExpenses();
+
+  const {
+    settlements,
     updateSettlement,
-    clearSettlements
-  } = useSupabaseData();
-  
-  const [newFriend, setNewFriend] = useState<string>('');
+    clearSettlements,
+    isLoading: loadingSettlements,
+    error: settlementsError
+  } = useSettlements();
+
+  const {
+    error: groupsError,
+  } = useGroups(); 
+
   const [description, setDescription] = useState<string>('');
   const [totalAmount, setTotalAmount] = useState<string>('');
-  const [payers, setPayers] = useState<Payers>({});
+  const [payers, setPayers] = useState<Record<string, number>>({});
   const [participants, setParticipants] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('friends');
 
-  const handleAddFriend = () => {
-    if (newFriend.trim() && !friends.includes(newFriend.trim())) {
-      addFriend(newFriend.trim());
-      setNewFriend('');
-    }
-  };
-
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [friendToDelete, setFriendToDelete] = useState<string | null>(null);
-
-  const handleDeleteFriend = (friend: string) => {
-    setFriendToDelete(friend);
-    setDialogOpen(true);
-  };
-
-  const confirmDeleteFriend = () => {
-    if (friendToDelete) {
-      deleteFriend(friendToDelete);
-      setFriendToDelete(null);
-      setDialogOpen(false);
-    }
-  };
+  const [expensesToDelete, setExpensesToDelete] = useState<string[]>([]);
+  const [settlementsToClear, setSettlementsToClear] = useState(false);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | 'all'>('all');
+  const [selectedFromFriend, setSelectedFromFriend] = useState<string>('');
+  const [selectedToFriend, setSelectedToFriend] = useState<string>('');
 
   const handleAddExpense = () => {
     if (description && totalAmount && Object.keys(payers).length > 0 && participants.size > 0) {
       const amount = parseFloat(totalAmount);
       const splitAmount = amount / participants.size;
 
-      const expense_payers = Object.entries(payers).map(([payer, amount]) => ({
-        payer,
-        amount: parseFloat(amount.toString())
-      })) as ExpenseType['expense_payers'];
+      const expense_payers = Object.entries(payers).map(([userId, amount]) => ({
+        id: '',
+        expense_id: '',
+        payer: userId,
+        amount: parseFloat(amount.toString()),
+        created_at: new Date().toISOString()
+      }));
 
-      const expense_participants = Array.from(participants).map(participant => ({
-        participant
-      })) as ExpenseType['expense_participants'];
+      const expense_participants = Array.from(participants).map(userId => ({
+        id: '',
+        expense_id: '',
+        participant: userId,
+        created_at: new Date().toISOString()
+      }));
 
-      const newExpense: ExpenseType = {
+      const newExpense = {
         description,
         amount,
         split_amount: splitAmount,
@@ -90,12 +97,6 @@ const ExpenseSplitter = () => {
     }
   };
 
-  const [expensesToDelete, setExpensesToDelete] = useState<string[]>([]);
-  const [settlementsToClear, setSettlementsToClear] = useState(false);
-  const [selectedExpenseId, setSelectedExpenseId] = useState<string | 'all'>('all');
-  const [selectedFromFriend, setSelectedFromFriend] = useState<string>('');
-  const [selectedToFriend, setSelectedToFriend] = useState<string>('');
-
   const handleDeleteExpense = (indices: number[]) => {
     const ids = indices.map(index => expenses[index]?.id).filter((id): id is string => !!id);
     setExpensesToDelete(ids);
@@ -112,13 +113,13 @@ const ExpenseSplitter = () => {
     }
   };
 
-  const handlePayerAmountChange = (friend: string, amount: string) => {
+  const handlePayerAmountChange = (userId: string, amount: string) => {
     setPayers(currentPayers => {
       const newPayers = { ...currentPayers };
       if (amount) {
-        newPayers[friend] = parseFloat(amount);
+        newPayers[userId] = parseFloat(amount);
       } else {
-        delete newPayers[friend];
+        delete newPayers[userId];
       }
       return newPayers;
     });
@@ -127,12 +128,15 @@ const ExpenseSplitter = () => {
   const handleSettlementUpdate = async (settlement: Settlement & { remaining: number }) => {
     const updatedSettlement = {
       ...settlement,
-      from_friend: settlement.from,
-      to_friend: settlement.to,
       paid: true,
       date: new Date().toISOString()
     };
     await updateSettlement(updatedSettlement);
+  };
+
+  const handleSelectFriend = (friend: User) => {
+    // Add friend to participants by default when selected
+    setParticipants(current => new Set(current).add(friend.id));
   };
 
   const filteredSettlements = useMemo(() => {
@@ -161,13 +165,19 @@ const ExpenseSplitter = () => {
       content: (
         <FriendsList
           friends={friends}
-          newFriend={newFriend}
-          onNewFriendChange={setNewFriend}
-          onAddFriend={handleAddFriend}
-          onDeleteFriend={handleDeleteFriend}
+          onSearchUsers={searchUsers}
+          searchResults={searchResults}
+          isSearching={isSearching}
           loading={loadingFriends}
+          onSelectFriend={handleSelectFriend}
         />
       )
+    },
+    {
+      id: 'groups',
+      label: 'Groups',
+      icon: <Users2 className="w-6 h-6" />,
+      content: <GroupsList />
     },
     {
       id: 'new-expense',
@@ -228,16 +238,16 @@ const ExpenseSplitter = () => {
               <SelectContent>
                 <SelectItem value="all">All Expenses</SelectItem>
                 {expenses.map((expense) => (
-                <SelectItem key={expense.id} value={expense.id!}>
-                  {expense.description} (${expense.amount})
-                </SelectItem>
-              ))}
+                  <SelectItem key={expense.id} value={expense.id!}>
+                    {expense.description} (${expense.amount})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             <Select 
               value={selectedFromFriend}
-              onValueChange={(value) => setSelectedFromFriend(value as string)}
+              onValueChange={(value) => setSelectedFromFriend(value)}
             >
               <SelectTrigger> 
                 <SelectValue placeholder="From friend" />
@@ -245,16 +255,16 @@ const ExpenseSplitter = () => {
               <SelectContent>
                 <SelectItem value="all">All Friends</SelectItem>
                 {friends.map((friend) => (
-                <SelectItem key={friend} value={friend}>
-                  {friend}
-                </SelectItem>
-              ))}
+                  <SelectItem key={friend.id} value={friend.id}>
+                    {friend.username}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             <Select 
               value={selectedToFriend}
-              onValueChange={(value) => setSelectedToFriend(value as string)}
+              onValueChange={(value) => setSelectedToFriend(value)}
             >
               <SelectTrigger> 
                 <SelectValue placeholder="To friend" />
@@ -262,16 +272,16 @@ const ExpenseSplitter = () => {
               <SelectContent>
                 <SelectItem value="all">All Friends</SelectItem>
                 {friends.map((friend) => (
-                <SelectItem key={friend} value={friend}>
-                  {friend}
-                </SelectItem>
-              ))}
+                  <SelectItem key={friend.id} value={friend.id}>
+                    {friend.username}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           
           <Settlements
-            expenses={expenses as unknown as Expense[]}
+            expenses={expenses}
             settlements={filteredSettlements}
             onSettlementPaid={handleSettlementUpdate}
             onClearSettlements={() => {
@@ -284,6 +294,8 @@ const ExpenseSplitter = () => {
       )
     }
   ];
+
+  const error = friendsError || expensesError || settlementsError || groupsError;
 
   if (error) {
     return (
@@ -301,11 +313,9 @@ const ExpenseSplitter = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>Confirm Action</DialogTitle>
             <DialogDescription>
-              {friendToDelete 
-                ? `Are you sure you want to delete ${friendToDelete}? This will affect all related expenses and settlements.`
-                : expensesToDelete.length > 0
+              {expensesToDelete.length > 0
                 ? `Are you sure you want to delete ${expensesToDelete.length} expense${expensesToDelete.length > 1 ? 's' : ''}?`
                 : settlementsToClear
                 ? 'Are you sure you want to clear all completed settlements? This action cannot be undone.'
@@ -316,9 +326,7 @@ const ExpenseSplitter = () => {
             <button
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               onClick={() => {
-                if (friendToDelete) {
-                  confirmDeleteFriend();
-                } else if (expensesToDelete.length > 0) {
+                if (expensesToDelete.length > 0) {
                   confirmDeleteExpense();
                 } else if (settlementsToClear) {
                   clearSettlements();
@@ -327,7 +335,7 @@ const ExpenseSplitter = () => {
                 }
               }}
             >
-              Delete
+              Confirm
             </button>
             <button
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 ml-2"

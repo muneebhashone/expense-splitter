@@ -1,18 +1,18 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Payers } from '@/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { User } from '@/types';
 import { DollarSign, Receipt, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface NewExpenseProps {
-  friends: string[];
+  friends: User[];
   totalAmount: string;
   description: string;
-  payers: Payers;
+  payers: Record<string, number>;
   participants: Set<string>;
   onTotalAmountChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
-  onPayerAmountChange: (friend: string, amount: string) => void;
-  onParticipantToggle: (participant: string) => void;
+  onPayerAmountChange: (userId: string, amount: string) => void;
+  onParticipantToggle: (userId: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
 }
@@ -50,9 +50,8 @@ export function NewExpense({
 
   const calculateRemainingAmount = () => {
     const total = parseFloat(totalAmount) || 0;
-    // Consider payer-locked amounts in calculation
     const payerLockedAmount = Object.entries(payers)
-      .filter(([friend]) => lockedInputs[friend] === 'payer')
+      .filter(([userId]) => lockedInputs[userId] === 'payer')
       .reduce((sum, [, amount]) => sum + (amount || 0), 0);
     return total - payerLockedAmount;
   };
@@ -60,34 +59,32 @@ export function NewExpense({
   const distributeRemainingAmount = () => {
     const remainingAmount = calculateRemainingAmount();
     const unlockedPayers = Array.from(participants).filter(
-      friend => lockedInputs[friend] === 'none' || !lockedInputs[friend]
+      userId => lockedInputs[userId] === 'none' || !lockedInputs[userId]
     );
 
     if (unlockedPayers.length > 0) {
       const amountPerPayer = (remainingAmount / unlockedPayers.length).toFixed(2);
-      unlockedPayers.forEach(friend => {
-        onPayerAmountChange(friend, amountPerPayer);
+      unlockedPayers.forEach(userId => {
+        onPayerAmountChange(userId, amountPerPayer);
       });
     }
   };
 
-  const toggleLock = (friend: string) => {
+  const toggleLock = (userId: string) => {
     const newLockedInputs = { ...lockedInputs };
-    const currentState = newLockedInputs[friend] || 'none';
+    const currentState = newLockedInputs[userId] || 'none';
     
-    // Cycle through lock states: none -> nonpayer -> payer -> none
     switch (currentState) {
       case 'none':
-        newLockedInputs[friend] = 'nonpayer';
-        onPayerAmountChange(friend, '0'); // Set to 0 for non-payer
+        newLockedInputs[userId] = 'nonpayer';
+        onPayerAmountChange(userId, '0');
         break;
       case 'nonpayer':
-        newLockedInputs[friend] = 'payer';
-        // Keep current amount for payer lock
+        newLockedInputs[userId] = 'payer';
         break;
       case 'payer':
-        newLockedInputs[friend] = 'none';
-        distributeRemainingAmount(); // Redistribute when unlocking
+        newLockedInputs[userId] = 'none';
+        distributeRemainingAmount();
         break;
     }
     
@@ -131,8 +128,8 @@ export function NewExpense({
     if (!isNaN(amount) && amount > 0 && participants.size > 0) {
       const splitAmount = (amount / participants.size).toFixed(2);
       const participantsArray = Array.from(participants);
-      participantsArray.forEach(participant => {
-        onPayerAmountChange(participant, splitAmount);
+      participantsArray.forEach(userId => {
+        onPayerAmountChange(userId, splitAmount);
       });
     }
   };
@@ -141,36 +138,36 @@ export function NewExpense({
     setSplitType('custom');
     const equalPercentage = (100 / participants.size).toFixed(2);
     const newPercentages: { [key: string]: string } = {};
-    participants.forEach(participant => {
-      newPercentages[participant] = equalPercentage;
+    participants.forEach(userId => {
+      newPercentages[userId] = equalPercentage;
       const amount = parseFloat(totalAmount);
       if (!isNaN(amount) && amount > 0) {
         const splitAmount = ((amount * parseFloat(equalPercentage)) / 100).toFixed(2);
-        onPayerAmountChange(participant, splitAmount);
+        onPayerAmountChange(userId, splitAmount);
       }
     });
     setPercentages(newPercentages);
   };
 
-  const handlePercentageChange = (friend: string, value: string) => {
-    const newPercentages = { ...percentages, [friend]: value };
+  const handlePercentageChange = (userId: string, value: string) => {
+    const newPercentages = { ...percentages, [userId]: value };
     setPercentages(newPercentages);
 
     const amount = parseFloat(totalAmount);
     if (!isNaN(amount) && amount > 0) {
       const percentage = parseFloat(value) || 0;
       const splitAmount = ((amount * percentage) / 100).toFixed(2);
-      onPayerAmountChange(friend, splitAmount);
+      onPayerAmountChange(userId, splitAmount);
     }
   };
 
   useEffect(() => {
-    Object.keys(payers).forEach(payer => {
-      if (!participants.has(payer)) {
-        onPayerAmountChange(payer, '');
+    Object.keys(payers).forEach(payerId => {
+      if (!participants.has(payerId)) {
+        onPayerAmountChange(payerId, '');
         if (splitType === 'custom') {
           const newPercentages = { ...percentages };
-          delete newPercentages[payer];
+          delete newPercentages[payerId];
           setPercentages(newPercentages);
         }
       }
@@ -187,8 +184,8 @@ export function NewExpense({
     if (splitType === 'equal') {
       handleSplitEqually();
     } else if (splitType === 'custom') {
-      Object.entries(percentages).forEach(([friend, percentage]) => {
-        handlePercentageChange(friend, percentage);
+      Object.entries(percentages).forEach(([userId, percentage]) => {
+        handlePercentageChange(userId, percentage);
       });
     }
   }, [totalAmount]);
@@ -260,7 +257,7 @@ export function NewExpense({
               <label className="block text-sm font-medium text-gray-700">Split Between</label>
               <button
                 type="button"
-                onClick={() => friends.forEach(friend => onParticipantToggle(friend))}
+                onClick={() => friends.forEach(friend => onParticipantToggle(friend.id))}
                 className="text-sm text-green-600 hover:text-green-700 bg-green-50 px-3 py-1.5 rounded-lg"
                 disabled={disabled}
               >
@@ -270,17 +267,17 @@ export function NewExpense({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
               {friends.map(friend => (
                 <button
-                  key={friend}
-                  onClick={() => onParticipantToggle(friend)}
+                  key={friend.id}
+                  onClick={() => onParticipantToggle(friend.id)}
                   className={`h-12 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                    participants.has(friend)
+                    participants.has(friend.id)
                       ? 'bg-green-100 text-green-800 hover:bg-green-200'
                       : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                   disabled={disabled}
                 >
                   <Users className="h-4 w-4" />
-                  {friend}
+                  {friend.username}
                 </button>
               ))}
             </div>
@@ -292,20 +289,7 @@ export function NewExpense({
           <div>
             <div className="flex flex-col gap-3 mb-4">
               <label className="block text-sm font-medium text-gray-700">Amount Paid by Each</label>
-              <div className=" w-full flex flex-col flex-wrap gap-2">
-                {/* <button
-                  type="button"
-                  onClick={handleSplitEqually}
-                  className={`flex-1 sm:flex-none py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                    splitType === 'equal'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                  }`}
-                  disabled={disabled || !totalAmount || participants.size === 0}
-                >
-                  Split Equally
-                </button>
-                */}
+              <div className="w-full flex flex-col flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={distributeRemainingAmount}
@@ -321,112 +305,115 @@ export function NewExpense({
               </div>
             </div>
             <div className="space-y-3">
-              {friends.map(friend => (
-                <div
-                  key={friend}
-                  className={`transition-opacity ${participants.has(friend) ? 'opacity-100' : 'opacity-50'}`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex items-center gap-2 w-full sm:w-40">
-                      <button
-                        type="button"
-                        onClick={() => toggleLock(friend)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          lockedInputs[friend] === 'nonpayer'
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                            : lockedInputs[friend] === 'payer'
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                        disabled={disabled || !participants.has(friend)}
-                        title={
-                          lockedInputs[friend] === 'nonpayer'
-                            ? 'Non-payer lock: Amount set to 0 and excluded from calculations'
-                            : lockedInputs[friend] === 'payer'
-                            ? 'Payer lock: Amount preserved and included in calculations'
-                            : 'Click to cycle through lock states'
-                        }
-                      >
-                        {(() => {
-                          switch (lockedInputs[friend]) {
-                            case 'nonpayer':
-                              return (
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                              );
-                            case 'payer':
-                              return (
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                  <circle cx="12" cy="16" r="1" fill="currentColor"></circle>
-                                </svg>
-                              );
-                            default:
-                              return (
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                  <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                                </svg>
-                              );
+              {friends.map(friend => {
+                const friendId = friend.id;
+                return (
+                  <div
+                    key={friendId}
+                    className={`transition-opacity ${participants.has(friendId) ? 'opacity-100' : 'opacity-50'}`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex items-center gap-2 w-full sm:w-40">
+                        <button
+                          type="button"
+                          onClick={() => toggleLock(friendId)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            lockedInputs[friendId] === 'nonpayer'
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                              : lockedInputs[friendId] === 'payer'
+                              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                          disabled={disabled || !participants.has(friendId)}
+                          title={
+                            lockedInputs[friendId] === 'nonpayer'
+                              ? 'Non-payer lock: Amount set to 0 and excluded from calculations'
+                              : lockedInputs[friendId] === 'payer'
+                              ? 'Payer lock: Amount preserved and included in calculations'
+                              : 'Click to cycle through lock states'
                           }
-                        })()}
-                      </button>
-                      <span className="text-sm font-medium">{friend}</span>
-                    </div>
-                    {splitType === 'custom' ? (
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1">
-                        <div className="relative flex-1">
-                          <input
-                            type="number"
-                            value={percentages[friend] || ''}
-                            onChange={e => handlePercentageChange(friend, e.target.value)}
-                            className="w-full h-12 pr-8 pl-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base"
-                            placeholder="0"
-                            step="0.01"
-                            min="0"
-                            max="100"
-                            disabled={disabled || !participants.has(friend) || Boolean(lockedInputs[friend])}
-                          />
-                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                            <span className="text-gray-400">%</span>
+                        >
+                          {(() => {
+                            switch (lockedInputs[friendId]) {
+                              case 'nonpayer':
+                                return (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                  </svg>
+                                );
+                              case 'payer':
+                                return (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    <circle cx="12" cy="16" r="1" fill="currentColor"></circle>
+                                  </svg>
+                                );
+                              default:
+                                return (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                  </svg>
+                                );
+                            }
+                          })()}
+                        </button>
+                        <span className="text-sm font-medium">{friend.username}</span>
+                      </div>
+                      {splitType === 'custom' ? (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1">
+                          <div className="relative flex-1">
+                            <input
+                              type="number"
+                              value={percentages[friendId] || ''}
+                              onChange={e => handlePercentageChange(friendId, e.target.value)}
+                              className="w-full h-12 pr-8 pl-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base"
+                              placeholder="0"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              disabled={disabled || !participants.has(friendId) || Boolean(lockedInputs[friendId])}
+                            />
+                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                              <span className="text-gray-400">%</span>
+                            </div>
+                          </div>
+                          <div className="relative w-full sm:w-32">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                              <DollarSign className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                              type="number"
+                              value={payers[friendId] || ''}
+                              readOnly
+                              className="w-full h-12 pl-11 pr-4 border border-gray-300 rounded-lg bg-gray-50 text-base"
+                              placeholder="0.00"
+                            />
                           </div>
                         </div>
-                        <div className="relative w-full sm:w-32">
+                      ) : (
+                        <div className="relative flex-1">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <DollarSign className="h-4 w-4 text-gray-400" />
                           </div>
                           <input
                             type="number"
-                            value={payers[friend] || ''}
-                            readOnly
-                            className="w-full h-12 pl-11 pr-4 border border-gray-300 rounded-lg bg-gray-50 text-base"
+                            value={payers[friendId] || ''}
+                            onChange={e => onPayerAmountChange(friendId, e.target.value)}
+                            className="w-full h-12 pl-11 pr-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base"
                             placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                            disabled={disabled || !participants.has(friendId) || lockedInputs[friendId] === 'nonpayer'}
                           />
                         </div>
-                      </div>
-                    ) : (
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <DollarSign className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input
-                          type="number"
-                          value={payers[friend] || ''}
-                          onChange={e => onPayerAmountChange(friend, e.target.value)}
-                          className="w-full h-12 pl-11 pr-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base"
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          disabled={disabled || !participants.has(friend) || lockedInputs[friend] === 'nonpayer'}
-                        />
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             {errors.payers && (
               <p className="mt-3 text-sm text-red-500">{errors.payers}</p>

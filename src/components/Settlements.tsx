@@ -8,20 +8,21 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import { LoadingCard } from "./ui/loading-card";
-import { Settlement as SettlementType } from "@/hooks/useSupabaseData";
-import { Expense, Settlement } from "@/types";
+import { Expense, Settlement, UserMap } from '@/types';
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 interface SettlementsProps {
-  settlements: SettlementType[];
+  settlements: Settlement[];
   onSettlementPaid: (settlement: Settlement & { remaining: number }) => void;
   onClearSettlements: () => void;
   loading?: boolean;
@@ -43,11 +44,42 @@ export function Settlements({
 }: SettlementsProps) {
   const [isEasyViewOpen, setIsEasyViewOpen] = useState(false);
 
+  // Fetch all unique user IDs from settlements
+  const userIds = useMemo(() => {
+    const ids = new Set<string>();
+    settlements.forEach(s => {
+      if (s.from_friend) ids.add(s.from_friend);
+      if (s.to_friend) ids.add(s.to_friend);
+    });
+    return Array.from(ids);
+  }, [settlements]);
+
+  // Fetch usernames for all users involved in settlements
+  const { data: userMap = {} as UserMap } = useQuery({
+    queryKey: ['users', userIds],
+    queryFn: async () => {
+      if (!userIds.length) return {} as UserMap;
+      
+      const { data } = await supabase
+        .from('users')
+        .select('id, username')
+        .in('id', userIds);
+      
+      return data?.reduce<UserMap>((acc, user) => ({
+        ...acc,
+        [user.id]: user.username
+      }), {}) || {};
+    },
+    enabled: userIds.length > 0
+  });
+
   const expenseIdToExpenseMapper = useMemo(() => {
     return expenses.reduce((acc, expense) => {
-      acc[expense.id] = expense;
+      if (expense.id) {
+        acc[expense.id] = expense;
+      }
       return acc;
-    }, {} as Record<number, Expense>);
+    }, {} as Record<string, Expense>);
   }, [expenses]);
 
   const netSettlements = useMemo(() => {
@@ -129,19 +161,15 @@ export function Settlements({
               </div>
               {unpaidSettlements.map((settlement, index) => (
                 <SettlementCard
-                  key={index}
+                  key={settlement.id || index}
                   settlement={{
-                    id: Number(settlement.id),
-                    from: settlement.from_friend!,
-                    to: settlement.to_friend!,
-                    amount: settlement.amount!,
-                    expense_id: settlement.expense_id,
-                    date: settlement.date,
+                    ...settlement,
                     remaining: 0,
-                    paid: settlement.paid,
                   }}
                   expenseDescription={expenseIdToExpenseMapper[settlement.expense_id]?.description}
                   onSettlementPaid={onSettlementPaid}
+                  fromUsername={userMap[settlement.from_friend]}
+                  toUsername={userMap[settlement.to_friend]}
                 />
               ))}
             </div>
@@ -164,19 +192,15 @@ export function Settlements({
               </div>
               {paidSettlements.map((settlement, index) => (
                 <SettlementCard
-                  key={index}
+                  key={settlement.id || index}
                   settlement={{
-                    id: Number(settlement.id),
-                    from: settlement.from_friend!,
-                    to: settlement.to_friend!,
-                    amount: settlement.amount!,
-                    expense_id: settlement.expense_id,
-                    date: settlement.date,
+                    ...settlement,
                     remaining: 0,
-                    paid: settlement.paid,
                   }}
                   expenseDescription={expenseIdToExpenseMapper[settlement.expense_id]?.description}
                   onSettlementPaid={onSettlementPaid}
+                  fromUsername={userMap[settlement.from_friend]}
+                  toUsername={userMap[settlement.to_friend]}
                   isPaid={true}
                 />
               ))}
@@ -202,14 +226,16 @@ export function Settlements({
                   >
                     <div className="flex flex-col space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-base">{settlement.from}</span>
+                        <span className="font-medium text-base">{userMap[settlement.from] || 'Loading...'}</span>
                         <span className="font-semibold text-green-600 text-lg">
                           ${settlement.amount.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>Pays to</span>
-                        <span className="font-medium text-base text-foreground">{settlement.to}</span>
+                        <span className="font-medium text-base text-foreground">
+                          {userMap[settlement.to] || 'Loading...'}
+                        </span>
                       </div>
                     </div>
                     <button
@@ -224,14 +250,10 @@ export function Settlements({
 
                         relevantSettlements.forEach((s) => {
                           onSettlementPaid({
-                            id: Number(s.id),
-                            from: s.from_friend!,
-                            to: s.to_friend!,
-                            amount: s.amount!,
+                            ...s,
                             remaining: 0,
                             paid: true,
                             date: new Date().toISOString(),
-                            expense_id: s.expense_id,
                           });
                         });
 

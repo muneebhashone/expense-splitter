@@ -1,7 +1,7 @@
 import { useUser } from "@supabase/auth-helpers-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Group, User } from "@/types";
+import { User } from "@/types";
 
 export const useGroups = () => {
   const user = useUser();
@@ -14,8 +14,8 @@ export const useGroups = () => {
         .from("groups")
         .select(`
           *,
-          group_members!inner (
-            users!inner (
+          group_members (
+            users (
               id,
               email,
               username
@@ -26,16 +26,24 @@ export const useGroups = () => {
 
       if (groupsError) throw groupsError;
 
-      return groupsData.map((group) => ({
-        ...group,
-        members: group.group_members.map((member) => ({
-          id: member.users.id,
-          email: member.users.email,
-          username: member.users.username
-        }))
-      })) as Group[];
+      console.log({groupsData});
+
+      return groupsData;
     },
     enabled: !!user,
+  });
+
+  const searchUsersMutation = useMutation({
+    mutationFn: async (searchTerm: string) => {
+      const { data, error: searchError } = await supabase
+        .from("users")
+        .select("id, email, username")
+        .ilike("email", `%${searchTerm}%`)
+        .limit(5);
+
+      if (searchError) throw searchError;
+      return data as User[];
+    },
   });
 
   const createGroupMutation = useMutation({
@@ -130,9 +138,12 @@ export const useGroups = () => {
     deleteGroup: deleteGroupMutation.mutate,
     addGroupMember: addGroupMemberMutation.mutate,
     removeGroupMember: removeGroupMemberMutation.mutate,
+    searchUsers: searchUsersMutation.mutate,
     isCreatingGroup: createGroupMutation.isPending,
     isDeletingGroup: deleteGroupMutation.isPending,
     isAddingMember: addGroupMemberMutation.isPending,
     isRemovingMember: removeGroupMemberMutation.isPending,
+    isSearchingUsers: searchUsersMutation.isPending,
+    searchResults: searchUsersMutation.data || [],
   };
 };

@@ -1,18 +1,23 @@
-import { useUser } from "@supabase/auth-helpers-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { User } from "@/types";
+import { useUser } from "@supabase/auth-helpers-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const useFriends = () => {
   const user = useUser();
 
-  const { data: friends = [], isLoading, error } = useQuery({
+  const {
+    data: friends = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["friends", user?.id],
     queryFn: async () => {
       // Get all groups the user is a member of
       const { data: groupMembers, error: groupError } = await supabase
         .from("group_members")
-        .select(`
+        .select(
+          `
           group_id,
           groups!inner (
             group_members!inner (
@@ -23,27 +28,23 @@ export const useFriends = () => {
               )
             )
           )
-        `)
+        `
+        )
         .eq("user_id", user!.id);
 
       if (groupError) throw groupError;
 
       // Extract unique users from all groups, excluding the current user
       const uniqueUsers = new Map<string, User>();
-      for (const groupMember of groupMembers) {
-        for (const group of groupMember.groups) {
-          for (const member of group.group_members) {
-            if (member.users && member.users.id !== user!.id) {
-              const memberUser: User = {
-                id: member.users.id,
-                email: member.users.email,
-                username: member.users.username
-              };
-              uniqueUsers.set(memberUser.id, memberUser);
-            }
-          }
-        }
-      }
+      
+      const members = groupMembers.forEach((member) => {
+        const user = (member.groups as unknown as {group_members: {users: User}[]})!.group_members[0]!.users;
+        uniqueUsers.set(user.id, user);
+      });
+
+      console.log({members: JSON.stringify(members, null, 2)});
+        
+    
 
       return Array.from(uniqueUsers.values());
     },

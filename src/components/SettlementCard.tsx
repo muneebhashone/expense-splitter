@@ -10,10 +10,12 @@ import {
 import { useState } from "react";
 
 interface SettlementCardProps {
-  settlement: Settlement;
+  settlement: Settlement & { remaining?: number };
   expenseDescription?: string;
   onSettlementPaid: (settlement: Settlement & { remaining: number }) => void;
   isPaid?: boolean;
+  fromUsername?: string;
+  toUsername?: string;
 }
 
 export function SettlementCard({
@@ -21,6 +23,8 @@ export function SettlementCard({
   expenseDescription,
   onSettlementPaid,
   isPaid = false,
+  fromUsername = 'Loading...',
+  toUsername = 'Loading...',
 }: SettlementCardProps) {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -36,11 +40,11 @@ export function SettlementCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={`font-medium ${isPaid ? "text-gray-600" : "text-gray-900"}`}>
-                {settlement.from}
+                {fromUsername}
               </span>
               <ArrowRight className="h-4 w-4 text-gray-400" />
               <span className={`font-medium ${isPaid ? "text-gray-600" : "text-gray-900"}`}>
-                {settlement.to}
+                {toUsername}
               </span>
             </div>
             <span className={`font-semibold text-lg ${isPaid ? "text-gray-600" : "text-green-600"}`}>
@@ -101,11 +105,11 @@ export function SettlementCard({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">From</label>
-                <p className="text-lg font-medium">{settlement.from}</p>
+                <p className="text-lg font-medium">{fromUsername}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">To</label>
-                <p className="text-lg font-medium">{settlement.to}</p>
+                <p className="text-lg font-medium">{toUsername}</p>
               </div>
             </div>
             

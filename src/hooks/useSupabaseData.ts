@@ -41,8 +41,9 @@ export type ExpenseParticipant =
 export const useSupabaseData = () => {
   const {
     friends,
-    addFriend,
-    deleteFriend,
+    searchUsers,
+    isSearching,
+    searchResults,
     isLoading: isFriendsLoading,
     error: friendsError
   } = useFriends();
@@ -77,8 +78,9 @@ export const useSupabaseData = () => {
     settlements,
     loading,
     error,
-    addFriend,
-    deleteFriend,
+    searchUsers,
+    isSearching,
+    searchResults,
     addExpense,
     deleteExpense,
     updateSettlement,

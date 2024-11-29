@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -17,10 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Expense } from '@/hooks/useSupabaseData';
+} from '@/components/ui/dialog';
+import { Expense, UserMap } from '@/types';
 import { format } from 'date-fns';
 import { DollarSign, Trash2, Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 interface ExpenseItemProps {
   expense: Expense;
@@ -39,6 +41,25 @@ export function ExpenseItem({
   onSelectChange,
   showDeleteButton 
 }: ExpenseItemProps) {
+  // Fetch usernames for payers
+  const { data: payerUsers = {} as UserMap } = useQuery({
+    queryKey: ['users', expense.expense_payers?.map(p => p.payer)],
+    queryFn: async () => {
+      if (!expense.expense_payers?.length) return {} as UserMap;
+      
+      const { data } = await supabase
+        .from('users')
+        .select('id, username')
+        .in('id', expense.expense_payers.map(p => p.payer));
+      
+      return data?.reduce<UserMap>((acc, user) => ({
+        ...acc,
+        [user.id]: user.username
+      }), {}) || {};
+    },
+    enabled: !!expense.expense_payers?.length
+  });
+
   return (
     <div className="bg-white p-4 rounded-lg border hover:border-purple-200 transition-colors relative">
       <div className="flex items-start gap-3">
@@ -82,12 +103,12 @@ export function ExpenseItem({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {expense?.expense_payers?.map((payer, idx) => (
+                  {expense?.expense_payers?.map((payer) => (
                     <span 
-                      key={idx} 
+                      key={payer.id} 
                       className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800"
                     >
-                      {payer.payer}: ${payer.amount.toFixed(2)}
+                      {payerUsers[payer.payer] || 'Loading...'}: ${payer.amount.toFixed(2)}
                     </span>
                   ))}
                 </div>
