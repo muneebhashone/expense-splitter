@@ -57,11 +57,16 @@ export default function NavBar({ user }: { user: User | null }) {
           <div className="hidden md:flex md:items-center md:gap-4">
             {user ? (
               <div className="flex items-center gap-4">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-primary font-medium">
-                    {user.email?.[0].toUpperCase()}
+                <Link href="/profile" className="flex items-center gap-2 hover:opacity-80">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary font-medium">
+                      {user.email?.[0].toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {user.email}
                   </span>
-                </div>
+                </Link>
                 <Button
                   variant="ghost"
                   onClick={handleSignOut}
@@ -108,15 +113,17 @@ export default function NavBar({ user }: { user: User | null }) {
                 ))}
                 {user ? (
                   <>
-                    <DropdownMenuItem className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-primary font-medium">
-                          {user.email?.[0].toUpperCase()}
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile" className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-primary font-medium">
+                            {user.email?.[0].toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted-foreground truncate">
+                          {user.email}
                         </span>
-                      </div>
-                      <span className="text-sm text-muted-foreground truncate">
-                        {user.email}
-                      </span>
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleSignOut}>
                       Sign out

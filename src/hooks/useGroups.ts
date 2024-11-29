@@ -26,8 +26,6 @@ export const useGroups = () => {
 
       if (groupsError) throw groupsError;
 
-      console.log({groupsData});
-
       return groupsData;
     },
     enabled: !!user,

@@ -37,14 +37,10 @@ export const useFriends = () => {
       // Extract unique users from all groups, excluding the current user
       const uniqueUsers = new Map<string, User>();
       
-      const members = groupMembers.forEach((member) => {
+      groupMembers.forEach((member) => {
         const user = (member.groups as unknown as {group_members: {users: User}[]})!.group_members[0]!.users;
         uniqueUsers.set(user.id, user);
       });
-
-      console.log({members: JSON.stringify(members, null, 2)});
-        
-    
 
       return Array.from(uniqueUsers.values());
     },
@@ -55,8 +51,9 @@ export const useFriends = () => {
     mutationFn: async (searchTerm: string) => {
       const { data, error: searchError } = await supabase
         .from("users")
-        .select("*")
-        .ilike("email", `%${searchTerm}%`)
+        .select("id, email, username")
+        .or(`email.ilike.%${searchTerm}%,username.ilike.%${searchTerm}%`)
+        .neq("id", user!.id)
         .limit(5);
 
       if (searchError) throw searchError;

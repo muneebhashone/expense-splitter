@@ -347,7 +347,7 @@ const ExpenseSplitter = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="max-w-md mx-auto">
+      <div className="max-w-4xl mx-auto">
         <Header activeTab={activeTab} onExportData={() => {}} onImportData={() => {}} />
         <div className="px-4">
           <BottomNavigation

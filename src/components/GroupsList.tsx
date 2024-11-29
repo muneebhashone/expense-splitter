@@ -16,6 +16,7 @@ import { useFriends } from "@/hooks/useFriends";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
 import { User } from "@/types";
+import { useUser } from "@supabase/auth-helpers-react";
 
 export function GroupsList() {
   const {
@@ -32,10 +33,11 @@ export function GroupsList() {
   const [name, setName] = useState("");
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const user = useUser();
 
   const handleCreateGroup = async () => {
     if (!name.trim()) return;
-    await createGroup({ name, members: selectedFriends });
+    await createGroup({ name, members: [...selectedFriends, user!.id] });
     setIsOpen(false);
     setName("");
     setSelectedFriends([]);
@@ -58,11 +60,15 @@ export function GroupsList() {
   };
 
   // Combine friends and search results, removing duplicates
-  const availableUsers = [...friends];
+  const availableUsers = [...friends].filter((availableUser) => availableUser.id !== user!.id);
+
+
   if (searchTerm.length >= 3 && searchResults.length > 0) {
-    searchResults.forEach((user) => {
-      if (!availableUsers.some((f) => f.id === user.id)) {
-        availableUsers.push(user);
+    searchResults.forEach((searchedUser) => {
+      if (!availableUsers.some((f) => f.id === searchedUser.id)) {
+        if(searchedUser.id !== user!.id) {
+          availableUsers.push(searchedUser);
+        }
       }
     });
   }
