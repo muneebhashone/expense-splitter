@@ -9,6 +9,66 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      users: {
+        Row: {
+          id: string
+          email: string
+          username: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          username: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          username?: string
+          created_at?: string
+        }
+      }
+      groups: {
+        Row: {
+          id: string
+          name: string
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_by?: string
+          created_at?: string
+        }
+      }
+      group_members: {
+        Row: {
+          id: string
+          group_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          group_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          group_id?: string
+          user_id?: string
+          created_at?: string
+        }
+      }
       expenses: {
         Row: {
           id: string
@@ -81,26 +141,6 @@ export interface Database {
           created_at?: string
         }
       }
-      friends: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          created_at?: string
-        }
-      }
       settlements: {
         Row: {
           id: string
@@ -112,6 +152,7 @@ export interface Database {
           date: string | null
           created_at: string
           expense_id: number
+          group_id: string
         }
         Insert: {
           id?: string
@@ -123,6 +164,7 @@ export interface Database {
           date?: string | null
           created_at?: string
           expense_id: number
+          group_id: string
         }
         Update: {
           id?: string
