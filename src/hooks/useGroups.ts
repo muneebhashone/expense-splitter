@@ -14,8 +14,12 @@ export const useGroups = () => {
         .from("groups")
         .select(`
           *,
-          group_members (
-            users (*)
+          group_members!inner (
+            users!inner (
+              id,
+              email,
+              username
+            )
           )
         `)
         .eq("created_by", user!.id);
@@ -24,7 +28,11 @@ export const useGroups = () => {
 
       return groupsData.map((group) => ({
         ...group,
-        members: group.group_members.map((member: any) => member.users),
+        members: group.group_members.map((member) => ({
+          id: member.users.id,
+          email: member.users.email,
+          username: member.users.username
+        }))
       })) as Group[];
     },
     enabled: !!user,

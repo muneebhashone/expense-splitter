@@ -116,8 +116,15 @@ export const useSettlements = () => {
         .from("expenses")
         .select(`
           *,
-          expense_payers (id, payer, amount),
-          expense_participants (id, participant)
+          expense_payers!inner (
+            id,
+            payer,
+            amount
+          ),
+          expense_participants!inner (
+            id,
+            participant
+          )
         `)
         .eq("id", expenseId)
         .single();
