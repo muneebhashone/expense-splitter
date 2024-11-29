@@ -1,6 +1,8 @@
 "use client";
 import { useMemo, useState } from 'react';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useFriends } from '@/hooks/useFriends';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useSettlements } from '@/hooks/useSettlements';
 import { Expense, Payers, Settlement } from '@/types';
 import { FriendsList } from '@/components/FriendsList';
 import { NewExpense } from '@/components/NewExpense';
@@ -8,7 +10,6 @@ import { ExpensesList } from '@/components/ExpensesList';
 import { Settlements } from '@/components/Settlements';
 import { Header } from '@/components/Header';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { Expense as ExpenseType } from '@/hooks/useSupabaseData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, PlusCircle, Receipt, Wallet } from 'lucide-react';
@@ -16,18 +17,28 @@ import { Users, PlusCircle, Receipt, Wallet } from 'lucide-react';
 const ExpenseSplitter = () => {
   const {
     friends,
-    expenses,
-    settlements,
-    loading: { friends: loadingFriends, expenses: loadingExpenses, settlements: loadingSettlements },
-    error,
+    loading: loadingFriends,
+    error: friendsError,
     addFriend,
-    deleteFriend,
+    deleteFriend
+  } = useFriends();
+
+  const {
+    expenses,
+    loading: loadingExpenses,
+    error: expensesError,
     addExpense,
-    deleteExpense,
+    deleteExpense
+  } = useExpenses();
+
+  const {
+    settlements,
+    loading: loadingSettlements,
+    error: settlementsError,
     updateSettlement,
     clearSettlements
-  } = useSupabaseData();
-  
+  } = useSettlements();
+
   const [newFriend, setNewFriend] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [totalAmount, setTotalAmount] = useState<string>('');
@@ -66,13 +77,13 @@ const ExpenseSplitter = () => {
       const expense_payers = Object.entries(payers).map(([payer, amount]) => ({
         payer,
         amount: parseFloat(amount.toString())
-      })) as ExpenseType['expense_payers'];
+      }));
 
       const expense_participants = Array.from(participants).map(participant => ({
         participant
-      })) as ExpenseType['expense_participants'];
+      }));
 
-      const newExpense: ExpenseType = {
+      const newExpense = {
         description,
         amount,
         split_amount: splitAmount,
@@ -271,7 +282,7 @@ const ExpenseSplitter = () => {
           </div>
           
           <Settlements
-            expenses={expenses as unknown as Expense[]}
+            expenses={expenses}
             settlements={filteredSettlements}
             onSettlementPaid={handleSettlementUpdate}
             onClearSettlements={() => {
@@ -284,6 +295,8 @@ const ExpenseSplitter = () => {
       )
     }
   ];
+
+  const error = friendsError || expensesError || settlementsError;
 
   if (error) {
     return (

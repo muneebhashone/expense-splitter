@@ -1,6 +1,7 @@
 import { Users, UserPlus, Plus, XCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingCard } from './ui/loading-card';
+import { useFriends } from '@/hooks/useFriends';
 
 interface FriendsListProps {
   friends: string[];
@@ -12,6 +13,8 @@ interface FriendsListProps {
 }
 
 export function FriendsList({ friends, newFriend, onNewFriendChange, onAddFriend, onDeleteFriend, loading }: FriendsListProps) {
+  const { friends, loading, addFriend, deleteFriend } = useFriends();
+
   if (loading) {
     return (
       <LoadingCard

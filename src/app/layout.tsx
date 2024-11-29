@@ -5,6 +5,7 @@ import { Inter, Poppins } from 'next/font/google';
 import { cookies } from 'next/headers';
 import './globals.css';
 import { Providers } from './providers';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const poppins = Poppins({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-poppins' });
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -25,16 +26,20 @@ export default async function RootLayout({
     data: { session },
   } = await supabase.auth.getSession();
 
+  const queryClient = new QueryClient();
+
   return (
     <html lang="en">
       <body className={`${poppins.variable} ${inter.variable}`}>
         <Providers initialSession={session}>
-          <div className="min-h-screen bg-gray-50">
-            <NavBar user={session?.user || null} />
-            <main className="mx-auto max-w-7xl py-6">
-              {children}
-            </main>
-          </div>
+          <QueryClientProvider client={queryClient}>
+            <div className="min-h-screen bg-gray-50">
+              <NavBar user={session?.user || null} />
+              <main className="mx-auto max-w-7xl py-6">
+                {children}
+              </main>
+            </div>
+          </QueryClientProvider>
         </Providers>
       </body>
     </html>
