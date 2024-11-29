@@ -14,6 +14,12 @@ export const useFriends = () => {
     queryKey: ["friends", user?.id],
     queryFn: async () => {
       // Get all groups the user is a member of
+
+      const groupIds = await supabase
+        .from("groups")
+        .select("id")
+        .eq("created_by", user!.id);
+
       const { data: groupMembers, error: groupError } = await supabase
         .from("group_members")
         .select(
@@ -30,16 +36,21 @@ export const useFriends = () => {
           )
         `
         )
-        .eq("user_id", user!.id);
+        .in("group_id", groupIds.data!.map((group) => group.id));
 
       if (groupError) throw groupError;
 
       // Extract unique users from all groups, excluding the current user
       const uniqueUsers = new Map<string, User>();
+
+      console.log({groupMembers})
       
       groupMembers.forEach((member) => {
-        const user = (member.groups as unknown as {group_members: {users: User}[]})!.group_members[0]!.users;
-        uniqueUsers.set(user.id, user);
+        (member.groups as unknown as {group_members: {users: User}[]})!.group_members.forEach((groupMember) => {
+            if(groupMember.users.id !== user!.id) {
+              uniqueUsers.set(groupMember.users.id, groupMember.users);
+            }
+        });
       });
 
       return Array.from(uniqueUsers.values());

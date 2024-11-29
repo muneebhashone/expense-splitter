@@ -1,4 +1,4 @@
-import { useGroups } from "@/hooks/useGroups";
+import { useGroups } from "../hooks/useGroups";
 import { GroupCard } from "./GroupCard";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -12,10 +12,10 @@ import {
 } from "./ui/dialog";
 import { useState } from "react";
 import { Input } from "./ui/input";
-import { useFriends } from "@/hooks/useFriends";
+import { useFriends } from "../hooks/useFriends";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
-import { User } from "@/types";
+import { User } from "../types";
 import { useUser } from "@supabase/auth-helpers-react";
 
 export function GroupsList() {
@@ -61,7 +61,6 @@ export function GroupsList() {
 
   // Combine friends and search results, removing duplicates
   const availableUsers = [...friends].filter((availableUser) => availableUser.id !== user!.id);
-
 
   if (searchTerm.length >= 3 && searchResults.length > 0) {
     searchResults.forEach((searchedUser) => {
@@ -177,15 +176,7 @@ export function GroupsList() {
       ) : (
         <div className="space-y-4">
           {groups.map((group) => (
-            <GroupCard
-              key={group.id}
-              group={{
-                ...group,
-                group_members: group.group_members.flatMap(
-                  (member) => member.users
-                ),
-              }}
-            />
+            <GroupCard key={group.id} group={group} />
           ))}
         </div>
       )}

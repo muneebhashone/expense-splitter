@@ -1,4 +1,4 @@
-import { Group } from "@/types";
+import { Group, User } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { useGroups } from "@/hooks/useGroups";
@@ -22,9 +22,8 @@ import {
   DialogTrigger,
 } 
 from "./ui/dialog";
-import { useFriends } from "@/hooks/useFriends";
 import { useUser } from "@supabase/auth-helpers-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
@@ -34,7 +33,6 @@ interface GroupCardProps {
 
 export function GroupCard({ group }: GroupCardProps) {
   const { deleteGroup, addGroupMember, removeGroupMember, searchUsers, searchResults, isSearchingUsers } = useGroups();
-  const { friends } = useFriends();
   const user = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -47,16 +45,20 @@ export function GroupCard({ group }: GroupCardProps) {
   };
 
   // Combine friends and search results, removing duplicates and filtering out existing members
-  const availableUsers = [...friends];
+  const availableUsers = useMemo(() => {
+    let users: User[] = searchResults;
 
+    if (searchTerm.length >= 3 && searchResults.length > 0) {
+      users = searchResults.filter(searchedUser => {
+        if (user!.id !== searchedUser.id) {
+          return true;
+        }
+        return false;
+      });
+    }
 
-  if (searchTerm.length >= 3 && searchResults.length > 0) {
-    searchResults.forEach(user => {
-      if (!availableUsers.some(f => f.id === user.id)) {
-        availableUsers.push(user);
-      }
-    });
-  }
+    return users;
+  }, [searchTerm, searchResults, user]);
 
   console.log({members: JSON.stringify(group, null, 2)});
 

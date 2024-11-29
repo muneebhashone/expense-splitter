@@ -1,7 +1,17 @@
 import { useUser } from "@supabase/auth-helpers-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import { User } from "@/types";
+import { supabase } from "../lib/supabase";
+import { User, Group } from "../types";
+
+interface RawGroupResponse {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+  group_members: Array<{
+    users: User;
+  }>;
+}
 
 export const useGroups = () => {
   const user = useUser();
@@ -26,7 +36,16 @@ export const useGroups = () => {
 
       if (groupsError) throw groupsError;
 
-      return groupsData;
+      // Transform the data to match the Group type
+      const rawGroups = groupsData as unknown as RawGroupResponse[];
+      return rawGroups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        created_by: group.created_by,
+        created_at: group.created_at,
+        // Flatten the nested users structure
+        group_members: group.group_members.map((member) => member.users)
+      })) as Group[];
     },
     enabled: !!user,
   });
@@ -104,6 +123,7 @@ export const useGroups = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["friends", user?.id] });
     },
   });
 

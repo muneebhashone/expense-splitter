@@ -1,10 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { User } from '@/types';
+import { User, Group } from '../types';
 import { DollarSign, Receipt, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { useUser } from '@supabase/auth-helpers-react';
 
 interface NewExpenseProps {
   friends: User[];
+  groups: Group[];
   totalAmount: string;
   description: string;
   payers: Record<string, number>;
@@ -15,6 +18,8 @@ interface NewExpenseProps {
   onParticipantToggle: (userId: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
+  selectedGroup?: string;
+  onGroupChange: (groupId: string) => void;
 }
 
 interface ValidationErrors {
@@ -32,6 +37,7 @@ interface LockedState {
 
 export function NewExpense({
   friends,
+  groups,
   totalAmount,
   description,
   payers,
@@ -41,12 +47,23 @@ export function NewExpense({
   onPayerAmountChange,
   onParticipantToggle,
   onSubmit,
-  disabled
+  disabled,
+  selectedGroup,
+  onGroupChange
 }: NewExpenseProps) {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [splitType, setSplitType] = useState<SplitType>('equal');
   const [percentages, setPercentages] = useState<{ [key: string]: string }>({});
   const [lockedInputs, setLockedInputs] = useState<LockedState>({});
+  const user = useUser();
+
+  // Filter friends based on selected group
+  const filteredFriends = [...(selectedGroup
+    ? friends.filter(friend => {
+        const group = groups.find(g => g.id === selectedGroup);
+        return group?.group_members.some(member => member.id === friend.id);
+      })
+    : friends), {id: user!.id, username: user!.email}];
 
   const calculateRemainingAmount = () => {
     const total = parseFloat(totalAmount) || 0;
@@ -212,6 +229,22 @@ export function NewExpense({
       <CardContent>
         <div className="space-y-6">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Group</label>
+            <Select value={selectedGroup} onValueChange={onGroupChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a group" />
+              </SelectTrigger>
+              <SelectContent>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <input
               type="text"
@@ -257,7 +290,7 @@ export function NewExpense({
               <label className="block text-sm font-medium text-gray-700">Split Between</label>
               <button
                 type="button"
-                onClick={() => friends.forEach(friend => onParticipantToggle(friend.id))}
+                onClick={() => filteredFriends.forEach(friend => onParticipantToggle(friend.id))}
                 className="text-sm text-green-600 hover:text-green-700 bg-green-50 px-3 py-1.5 rounded-lg"
                 disabled={disabled}
               >
@@ -265,7 +298,7 @@ export function NewExpense({
               </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-              {friends.map(friend => (
+              {filteredFriends.map(friend => (
                 <button
                   key={friend.id}
                   onClick={() => onParticipantToggle(friend.id)}
@@ -304,15 +337,15 @@ export function NewExpense({
                 </button>
               </div>
             </div>
-            <div className="space-y-3">
-              {friends.map(friend => {
+            <div className="space-y-3 flex flex-col">
+              {filteredFriends.map(friend => {
                 const friendId = friend.id;
                 return (
                   <div
                     key={friendId}
                     className={`transition-opacity ${participants.has(friendId) ? 'opacity-100' : 'opacity-50'}`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex flex-col items-start w-full gap-3">
                       <div className="flex items-center gap-2 w-full sm:w-40">
                         <button
                           type="button"
@@ -394,7 +427,7 @@ export function NewExpense({
                           </div>
                         </div>
                       ) : (
-                        <div className="relative flex-1">
+                        <div className="relative flex-1 w-full">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <DollarSign className="h-4 w-4 text-gray-400" />
                           </div>

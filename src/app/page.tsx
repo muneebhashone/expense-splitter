@@ -1,20 +1,20 @@
 "use client";
 import { useMemo, useState } from 'react';
-import { useFriends } from '@/hooks/useFriends';
-import { useExpenses } from '@/hooks/useExpenses';
-import { useSettlements } from '@/hooks/useSettlements';
-import { Settlement, User } from '@/types';
-import { FriendsList } from '@/components/FriendsList';
-import { NewExpense } from '@/components/NewExpense';
-import { ExpensesList } from '@/components/ExpensesList';
-import { Settlements } from '@/components/Settlements';
-import { Header } from '@/components/Header';
-import { BottomNavigation } from '@/components/BottomNavigation';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFriends } from '../hooks/useFriends';
+import { useExpenses } from '../hooks/useExpenses';
+import { useSettlements } from '../hooks/useSettlements';
+import { Settlement, User } from '../types';
+import { FriendsList } from '../components/FriendsList';
+import { NewExpense } from '../components/NewExpense';
+import { ExpensesList } from '../components/ExpensesList';
+import { Settlements } from '../components/Settlements';
+import { Header } from '../components/Header';
+import { BottomNavigation } from '../components/BottomNavigation';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Users, PlusCircle, Receipt, Wallet, Users2 } from 'lucide-react';
-import { useGroups } from '@/hooks/useGroups';
-import { GroupsList } from '@/components/GroupsList';
+import { useGroups } from '../hooks/useGroups';
+import { GroupsList } from '../components/GroupsList';
 
 const ExpenseSplitter = () => {
   const {
@@ -43,6 +43,7 @@ const ExpenseSplitter = () => {
   } = useSettlements();
 
   const {
+    groups,
     error: groupsError,
   } = useGroups(); 
 
@@ -51,6 +52,7 @@ const ExpenseSplitter = () => {
   const [payers, setPayers] = useState<Record<string, number>>({});
   const [participants, setParticipants] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('friends');
+  const [selectedGroup, setSelectedGroup] = useState<string>('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expensesToDelete, setExpensesToDelete] = useState<string[]>([]);
@@ -85,7 +87,8 @@ const ExpenseSplitter = () => {
         split_amount: splitAmount,
         date: new Date().toISOString(),
         expense_payers,
-        expense_participants
+        expense_participants,
+        group_id: selectedGroup || undefined
       };
 
       addExpense(newExpense);
@@ -94,6 +97,7 @@ const ExpenseSplitter = () => {
       setTotalAmount('');
       setPayers({});
       setParticipants(new Set());
+      setSelectedGroup('');
     }
   };
 
@@ -186,6 +190,7 @@ const ExpenseSplitter = () => {
       content: (
         <NewExpense
           friends={friends}
+          groups={groups}
           description={description}
           totalAmount={totalAmount}
           payers={payers}
@@ -206,6 +211,8 @@ const ExpenseSplitter = () => {
           }}
           onSubmit={handleAddExpense}
           disabled={loadingExpenses || loadingFriends}
+          selectedGroup={selectedGroup}
+          onGroupChange={setSelectedGroup}
         />
       )
     },

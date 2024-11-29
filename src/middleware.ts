@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
 
   // If user is signed in and the current path is /login or /signup,
   // redirect the user to /
-  if (session && ['/login', '/signup', '/forgot-password', '/reset-password'].includes(req.nextUrl.pathname)) {
+  if (session && ['/login', '/signup', '/forgot-password'].includes(req.nextUrl.pathname)) {
     const redirectUrl = req.nextUrl.clone();
     redirectUrl.pathname = '/';
     return NextResponse.redirect(redirectUrl);
