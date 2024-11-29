@@ -1,6 +1,7 @@
 import { useUser } from "@supabase/auth-helpers-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { User } from "@/types";
 
 export const useFriends = () => {
   const user = useUser();
@@ -9,43 +10,47 @@ export const useFriends = () => {
   const { data: friends = [], isLoading, error } = useQuery({
     queryKey: ["friends", user?.id],
     queryFn: async () => {
-      const { data, error: friendsError } = await supabase
-        .from("friends")
-        .select("name")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: true });
+      // Get all groups the user is a member of
+      const { data: groupMembers, error: groupError } = await supabase
+        .from("group_members")
+        .select(`
+          group_id,
+          groups!inner (
+            group_members!inner (
+              users (*)
+            )
+          )
+        `)
+        .eq("user_id", user!.id);
 
-      if (friendsError) throw friendsError;
-      return data.map((f) => f.name);
+      if (groupError) throw groupError;
+
+      // Extract unique users from all groups, excluding the current user
+      const uniqueUsers = new Map<string, User>();
+      groupMembers.forEach((groupMember) => {
+        groupMember.groups.group_members.forEach((member: any) => {
+          const memberUser = member.users;
+          if (memberUser.id !== user!.id) {
+            uniqueUsers.set(memberUser.id, memberUser);
+          }
+        });
+      });
+
+      return Array.from(uniqueUsers.values());
     },
     enabled: !!user,
   });
 
-  const addFriendMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const { error } = await supabase
-        .from("friends")
-        .insert({ user_id: user!.id, name });
+  const searchUsersMutation = useMutation({
+    mutationFn: async (searchTerm: string) => {
+      const { data, error: searchError } = await supabase
+        .from("users")
+        .select("*")
+        .ilike("email", `%${searchTerm}%`)
+        .limit(5);
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends", user?.id] });
-    },
-  });
-
-  const deleteFriendMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const { error } = await supabase
-        .from("friends")
-        .delete()
-        .eq("user_id", user!.id)
-        .eq("name", name);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends", user?.id] });
+      if (searchError) throw searchError;
+      return data as User[];
     },
   });
 
@@ -53,9 +58,8 @@ export const useFriends = () => {
     friends,
     isLoading,
     error: error?.message || null,
-    addFriend: addFriendMutation.mutate,
-    deleteFriend: deleteFriendMutation.mutate,
-    isAddingFriend: addFriendMutation.isPending,
-    isDeletingFriend: deleteFriendMutation.isPending,
+    searchUsers: searchUsersMutation.mutate,
+    isSearching: searchUsersMutation.isPending,
+    searchResults: searchUsersMutation.data || [],
   };
 };

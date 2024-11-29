@@ -62,6 +62,7 @@ export const useSettlements = () => {
               paid: true,
               date: settlement.date,
               expense_id: Number(settlement.expense_id),
+              group_id: settlement.group_id,
             });
 
           if (insertError) throw insertError;
