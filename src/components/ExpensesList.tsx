@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { LoadingCard } from './ui/loading-card';
-import { Expense } from '@/hooks/useSupabaseData';
+import { Expense } from '@/types';
 import { useState } from 'react';
 import { ExpenseItem } from './ExpenseItem';
 

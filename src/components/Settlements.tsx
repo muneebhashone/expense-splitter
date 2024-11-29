@@ -16,12 +16,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LoadingCard } from "./ui/loading-card";
-import { Settlement as SettlementType } from "@/hooks/useSupabaseData";
+import { useSettlements } from "@/hooks/useSettlements";
 import { Expense, Settlement } from "@/types";
 import { useMemo, useState } from "react";
 
 interface SettlementsProps {
-  settlements: SettlementType[];
+  settlements: Settlement[];
   onSettlementPaid: (settlement: Settlement & { remaining: number }) => void;
   onClearSettlements: () => void;
   loading?: boolean;
