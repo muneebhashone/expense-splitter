@@ -30,18 +30,20 @@ export const useFriends = () => {
 
       // Extract unique users from all groups, excluding the current user
       const uniqueUsers = new Map<string, User>();
-      groupMembers.forEach((groupMember) => {
-        groupMember.groups.group_members.forEach((member) => {
-          const memberUser: User = {
-            id: member.users.id,
-            email: member.users.email,
-            username: member.users.username
-          };
-          if (memberUser.id !== user!.id) {
-            uniqueUsers.set(memberUser.id, memberUser);
+      for (const groupMember of groupMembers) {
+        if (groupMember.groups?.group_members) {
+          for (const member of groupMember.groups.group_members) {
+            if (member.users && member.users.id !== user!.id) {
+              const memberUser: User = {
+                id: member.users.id,
+                email: member.users.email,
+                username: member.users.username
+              };
+              uniqueUsers.set(memberUser.id, memberUser);
+            }
           }
-        });
-      });
+        }
+      }
 
       return Array.from(uniqueUsers.values());
     },
