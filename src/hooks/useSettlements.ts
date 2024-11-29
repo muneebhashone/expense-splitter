@@ -170,6 +170,7 @@ export const useSettlements = () => {
           paid: false,
           date: new Date().toISOString(),
           expense_id: Number(expenseId),
+          group_id: expense.group_id,
         });
 
         balances[creditor] -= settlementAmount;

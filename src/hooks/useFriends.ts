@@ -1,11 +1,10 @@
 import { useUser } from "@supabase/auth-helpers-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { User } from "@/types";
 
 export const useFriends = () => {
   const user = useUser();
-  const queryClient = useQueryClient();
 
   const { data: friends = [], isLoading, error } = useQuery({
     queryKey: ["friends", user?.id],
