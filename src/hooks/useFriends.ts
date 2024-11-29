@@ -31,8 +31,8 @@ export const useFriends = () => {
       // Extract unique users from all groups, excluding the current user
       const uniqueUsers = new Map<string, User>();
       for (const groupMember of groupMembers) {
-        if (groupMember.groups?.group_members) {
-          for (const member of groupMember.groups.group_members) {
+        for (const group of groupMember.groups) {
+          for (const member of group.group_members) {
             if (member.users && member.users.id !== user!.id) {
               const memberUser: User = {
                 id: member.users.id,
